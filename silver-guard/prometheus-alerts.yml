@@ -1,0 +1,404 @@
+# Silver Guard · Prometheus 告警规则
+# 版本：v1.0（评审后冻结版 · 基于 PRD v1.2）
+# 用途：Prometheus AlertManager 告警阈值配置
+# 部署：prometheus.yml 中添加 rule_files 指向本文件
+# 说明：
+#   - 所有告警按 30 秒 SLA 分解的 5 段链路设计
+#   - 告警分为：P0（立即处理）/ P1（30分钟内）/ P2（2小时内）/ P3（次日）
+#   - 告警通道：企业微信（内网）/ 短信（值班手机）
+#   - 告警收敛：同一告警 5 分钟内不重复发送（AlertManager grouping）
+
+groups:
+  # ============================================================
+  # G1：30 秒 SLA 链路（核心业务）
+  # ============================================================
+  - name: silver-guard-sla-30s
+    interval: 30s
+    rules:
+
+      # G1-A：设备上报延迟
+      - alert: DeviceReportLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(silverguard_device_report_duration_seconds_bucket[5m])) by (le)
+          ) > 1
+        for: 2m
+        labels:
+          severity: p1
+          service: gateway
+          sla: "30s-sla"
+        annotations:
+          summary: "设备上报 P95 延迟超过 1 秒"
+          description: "设备上报 P95 = {{ $value | printf \"%.2f\" }}s > 1s（阈值）
+当前值已接近 SLA 上限（30秒中分给上报段 ≤ 1s）
+请检查：MQTT 网关性能 / 网络抖动 / 设备批量上报"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/device-report-latency"
+
+      # G1-B：网关处理延迟
+      - alert: GatewayProcessLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(silverguard_gateway_process_duration_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 2m
+        labels:
+          severity: p1
+          service: gateway
+          sla: "30s-sla"
+        annotations:
+          summary: "网关处理 P95 延迟超过 2 秒"
+          description: "网关处理 P95 = {{ $value | printf \"%.2f\" }}s > 2s（阈值）
+请检查：Spring Boot 应用 GC / 连接池耗尽 / 线程池饱和"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/gateway-process-latency"
+
+      # G1-C：AI 研判延迟（P2 告警，因有降级兜底）
+      - alert: AiJudgeLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(silverguard_ai_judge_duration_seconds_bucket[5m])) by (le)
+          ) > 5
+        for: 3m
+        labels:
+          severity: p2
+          service: ai
+          sla: "30s-sla"
+          has_fallback: "true"
+        annotations:
+          summary: "AI 研判 P95 延迟超过 5 秒（降级兜底已生效）"
+          description: "AI 研判 P95 = {{ $value | printf \"%.2f\" }}s > 5s（阈值）
+⚠️ 当前降级策略已触发：超时事件走规则引擎直接生成 L2
+请检查：通义千问 API 响应 / LangChain4j 超时配置 / 模型队列积压
+AI 误报率当前：{{ printf \"%.1f\" (avg_over_time(silverguard_ai_false_positive_rate[1h]) * 100) }}%"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/ai-judge-latency"
+
+      # G1-C-2：AI 研判完全不可用（LLM 超时，P1）
+      - alert: AiJudgeCompletelyDown
+        expr: |
+          sum(rate(silverguard_ai_judge_errors_total[5m])) /
+          sum(rate(silverguard_ai_judge_total[5m])) > 0.5
+        for: 2m
+        labels:
+          severity: p1
+          service: ai
+          sla: "30s-sla"
+        annotations:
+          summary: "AI 研判错误率超过 50%（全面降级运行）"
+          description: "AI 研判错误率 = {{ $value | printf \"%.1f\" }}%
+⚠️ 所有预警已切换为规则引擎兜底模式（无 AI 解释）
+请立即检查：LLM API Key 余额 / 网络连通性 / API 限流"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/ai-judge-down"
+
+      # G1-D：通知发送延迟
+      - alert: NotifySendLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(silverguard_notify_send_duration_seconds_bucket[5m])) by (le, channel)
+          ) > 5
+        for: 2m
+        labels:
+          severity: p1
+          service: notify
+          sla: "30s-sla"
+        annotations:
+          summary: "通知发送 P95 延迟超过 5 秒"
+          description: "通道={{ $labels.channel }} P95 = {{ $value | printf \"%.2f\" }}s > 5s
+请检查：短信/电话/推送通道供应商状态"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/notify-send-latency"
+
+      # G1-E：端到端 30 秒 SLA 告警（P0，立即处理）
+      - alert: Sla30sBreach
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(silverguard_event_total_latency_seconds_bucket[5m])) by (le)
+          ) > 30
+        for: 1m
+        labels:
+          severity: p0
+          service: core
+          sla: "30s-sla"
+        annotations:
+          summary: "🚨 30 秒 SLA 突破！P95 端到端延迟超过阈值"
+          description: |
+            端到端预警响应 P95 = {{ $value | printf "%.1f" }}s >> 30s（SLA 阈值）
+            这是最高级别告警（SLA 承诺违约）！
+            当前链路状态：
+              设备上报：{{ printf "%.2f" (quantile_over_time(0.95, silverguard_device_report_duration_seconds_bucket[5m])) }}s
+              网关处理：{{ printf "%.2f" (quantile_over_time(0.95, silverguard_gateway_process_duration_seconds_bucket[5m])) }}s
+              AI 研判：{{ printf "%.2f" (quantile_over_time(0.95, silverguard_ai_judge_duration_seconds_bucket[5m])) }}s
+              通知发送：{{ printf "%.2f" (quantile_over_time(0.95, silverguard_notify_send_duration_seconds_bucket[5m])) }}s
+            请立即启动 On-call 流程，联系后端 + AI 负责人
+          runbook_url: "https://wiki.silver-guard.cn/runbook/sla-30s-breach"
+
+      # G1-F：端到端 SLA 预警（接近阈值，提前告警）
+      - alert: Sla30sApproaching
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(silverguard_event_total_latency_seconds_bucket[5m])) by (le)
+          ) > 25
+        for: 5m
+        labels:
+          severity: p2
+          service: core
+          sla: "30s-sla"
+        annotations:
+          summary: "⚠️ 30 秒 SLA 接近突破（P95 > 25s）"
+          description: "端到端 P95 = {{ $value | printf \"%.1f\" }}s，距 SLA 阈值仅剩 {{ printf \"%.1f\" (30 - $value) }}s
+请检查各链路指标，必要时启动预防性扩容"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/sla-30s-approaching"
+
+  # ============================================================
+  # G2：预警质量（误报率 / 召回率）
+  # ============================================================
+  - name: silver-guard-ai-quality
+    interval: 5m
+    rules:
+
+      # G2-A：误报率超标
+      - alert: AiFalsePositiveRateHigh
+        expr: |
+          silverguard_ai_false_positive_rate > 0.10
+        for: 30m
+        labels:
+          severity: p2
+          service: ai
+        annotations:
+          summary: "AI 误报率超过 10%（阈值：10%）"
+          description: |
+            AI 误报率 = {{ $value | printf "%.1f" }}% > 10%（SLA 阈值）
+            近 30 分钟误报事件数：{{ printf "%.0f" (sum(increase(silverguard_ai_judge_total[30m])) * $value) }}
+            请检查：模型版本 / Prompt 版本 / 老人活动特征是否发生变化
+            超过 20% 将自动触发降级，详见 T-08"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/ai-false-positive"
+
+      # G2-B：召回率低于阈值
+      - alert: AiRecallRateLow
+        expr: |
+          silverguard_ai_recall_rate < 0.90
+        for: 1h
+        labels:
+          severity: p2
+          service: ai
+        annotations:
+          summary: "AI 召回率低于 90%（阈值：90%）"
+          description: "AI 召回率 = {{ $value | printf \"%.1f\" }}% < 90%（SLA 阈值）
+近 1 小时内可能存在漏报，请检查 AI 模型版本与边缘端数据质量"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/ai-recall"
+
+      # G2-C：连续 3 天误报率 > 15%（升级）
+      - alert: AiFalsePositiveRateCritical
+        expr: |
+          avg_over_time(silverguard_ai_false_positive_rate[3d]) > 0.15
+        for: 5m
+        labels:
+          severity: p1
+          service: ai
+        annotations:
+          summary: "🚨 AI 误报率持续 3 天 > 15%，召回率告警"
+          description: "3 日平均误报率 = {{ $value | printf \"%.1f\" }}%
+⚠️ 严重影响网格员信任度，请 AI 团队立即介入调优"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/ai-false-positive-critical"
+
+  # ============================================================
+  # G3：系统可用性
+  # ============================================================
+  - name: silver-guard-availability
+    interval: 1m
+    rules:
+
+      # G3-A：API 错误率 > 1%
+      - alert: ApiErrorRateHigh
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5..", uri=~"/api/.*"}[5m])) /
+          sum(rate(http_server_requests_seconds_count{uri=~"/api/.*"}[5m])) > 0.01
+        for: 3m
+        labels:
+          severity: p1
+          service: core
+        annotations:
+          summary: "API 5xx 错误率超过 1%"
+          description: "5xx 错误率 = {{ $value | printf \"%.2f\" }}%
+当前 5xx 错误数/5min：{{ printf \"%.0f\" (sum(increase(http_server_requests_seconds_count{status=~"5..",uri=~"/api/.*"}[5m]))) }}"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/api-error-rate"
+
+      # G3-B：API 完全不可用（P0）
+      - alert: ApiCompletelyDown
+        expr: |
+          sum(rate(http_server_requests_seconds_count{uri=~"/api/v1/.*"}[2m])) < 0.1
+        for: 2m
+        labels:
+          severity: p0
+          service: core
+        annotations:
+          summary: "🚨 API 完全不可用（请求率接近 0）"
+          description: "API 请求率 = {{ $value | printf "%.2f" }} req/s，近 2 分钟无有效请求
+请立即检查：Pod 状态 / JVM 健康 / 数据库连接 / 内存溢出"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/api-down"
+
+      # G3-C：数据库连接池耗尽
+      - alert: DbPoolExhausted
+        expr: |
+          hikaricp_connections_active / hikaricp_connections_max > 0.9
+        for: 2m
+        labels:
+          severity: p1
+          service: db
+        annotations:
+          summary: "数据库连接池使用率 > 90%"
+          description: "HikariCP 活跃连接数 = {{ $value | printf "%.1f" }}% of max
+请检查：慢查询 / 连接泄漏 / 数据库负载"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/db-pool"
+
+      # G3-D：Redis 不可用
+      - alert: RedisDown
+        expr: |
+          redis_connected_clients == 0
+        for: 1m
+        labels:
+          severity: p1
+          service: cache
+        annotations:
+          summary: "Redis 连接数为 0（可能已离线）"
+          description: "Redis connected_clients = 0
+⚠️ 多级缓存降级为 Caffeine 本地缓存，Redis 依赖功能不可用
+请检查：Redis 容器状态 / 内存 / 网络"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/redis-down"
+
+      # G3-E：JVM 内存告警
+      - alert: JvmMemoryPressure
+        expr: |
+          jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.85
+        for: 5m
+        labels:
+          severity: p2
+          service: jvm
+        annotations:
+          summary: "JVM Heap 使用率 > 85%"
+          description: "JVM Heap = {{ printf \"%.1f\" ($value * 100) }}%
+请检查：内存泄漏 / 大对象 / Full GC 频率"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/jvm-memory"
+
+      # G3-F：JVM OOM
+      - alert: JvmOutOfMemory
+        expr: |
+          jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.98
+        for: 1m
+        labels:
+          severity: p0
+          service: jvm
+        annotations:
+          summary: "🚨 JVM Heap 使用率 > 98%（OOM 风险）"
+          description: "JVM Heap = {{ printf "%.1f\" ($value * 100) }}%
+请立即触发 On-call，OOM 即将发生"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/jvm-oom"
+
+  # ============================================================
+  # G4：通知通道健康
+  # ============================================================
+  - name: silver-guard-notify-channels
+    interval: 5m
+    rules:
+
+      # G4-A：通知通道失败率 > 5%
+      - alert: NotifyChannelFailureRateHigh
+        expr: |
+          sum(rate(silverguard_notify_send_failures_total[10m])) by (channel) /
+          sum(rate(silverguard_notify_send_total[10m])) by (channel) > 0.05
+        for: 5m
+        labels:
+          severity: p2
+          service: notify
+        annotations:
+          summary: "通知通道 {{ $labels.channel }} 失败率 > 5%"
+          description: "通道={{ $labels.channel }} 失败率 = {{ $value | printf \"%.1f\" }}%
+请检查：供应商控制台 / API 额度 / 签名配置"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/notify-channel"
+
+      # G4-B：通知队列积压
+      - alert: NotifyQueueBacklog
+        expr: |
+          silverguard_notify_queue_size > 1000
+        for: 10m
+        labels:
+          severity: p2
+          service: notify
+        annotations:
+          summary: "通知队列积压 > 1000 条"
+          description: "通知队列积压 = {{ $value }} 条
+请检查：通知发送速率是否正常 / 消费者是否正常消费"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/notify-queue"
+
+  # ============================================================
+  # G5：设备与感知
+  # ============================================================
+  - name: silver-guard-device
+    interval: 5m
+    rules:
+
+      # G5-A：设备离线数过多
+      - alert: DeviceOfflineRateHigh
+        expr: |
+          sum(silverguard_device_status{status="OFFLINE"}) /
+          sum(silverguard_device_status) > 0.1
+        for: 10m
+        labels:
+          severity: p2
+          service: device
+        annotations:
+          summary: "设备离线率 > 10%"
+          description: "离线设备数 = {{ printf \"%.0f\" (sum(silverguard_device_status{status=\"OFFLINE\"})) }} / {{ printf \"%.0f\" (sum(silverguard_device_status)) }}
+请检查：设备电量 / 网络 / 社区网络基础设施"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/device-offline"
+
+      # G5-B：设备大量离线（> 20%，紧急）
+      - alert: DeviceOfflineRateCritical
+        expr: |
+          sum(silverguard_device_status{status="OFFLINE"}) /
+          sum(silverguard_device_status) > 0.2
+        for: 5m
+        labels:
+          severity: p1
+          service: device
+        annotations:
+          summary: "🚨 设备离线率 > 20%（大规模离线）"
+          description: "离线设备数 = {{ printf \"%.0f\" (sum(silverguard_device_status{status=\"OFFLINE\"})) }} / {{ printf \"%.0f\" (sum(silverguard_device_status)) }}
+⚠️ 可能存在区域网络故障，请联系社区基础设施负责人"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/device-offline-critical"
+
+  # ============================================================
+  # G6：容量管理
+  # ============================================================
+  - name: silver-guard-capacity
+    interval: 5m
+    rules:
+
+      # G6-A：CPU 使用率持续 > 70%
+      - alert: CpuUsageHigh
+        expr: |
+          avg_over_time(container_cpu_usage_seconds_total[10m]) > 0.7
+        for: 10m
+        labels:
+          severity: p2
+          service: infra
+        annotations:
+          summary: "CPU 使用率持续 > 70%"
+          description: "当前 CPU = {{ printf \"%.1f\" ($value * 100) }}%
+请评估是否需要扩容或优化代码"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/cpu-high"
+
+      # G6-B：夜间预警漏报（无事件生成但设备有活动）
+      - alert: NightAlertMissing
+        expr: |
+          (
+            sum(increase(silverguard_device_active_events_total[30m])) > 10
+          ) and (
+            sum(increase(silverguard_events_total{level=~"3|4"}[30m])) == 0
+          )
+        for: 30m
+        labels:
+          severity: p1
+          service: ai
+        annotations:
+          summary: "⚠️ 夜间设备活跃但无任何预警生成（可能漏报）"
+          description: "近 30 分钟设备活跃事件 = {{ printf \"%.0f\" (sum(increase(silverguard_device_active_events_total[30m]))) }} 条
+但无任何 L3/L4 预警生成，请检查 AI 研判链路与规则引擎"
+          runbook_url: "https://wiki.silver-guard.cn/runbook/night-alert-missing"

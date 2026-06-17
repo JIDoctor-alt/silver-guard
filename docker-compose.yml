@@ -1,0 +1,149 @@
+version: '3.8'
+# =========================================================
+# Silver Guard · Docker Compose 本地开发/测试环境
+# 使用：docker compose up -d
+# 停止：docker compose down
+# 清理：docker compose down -v（删除数据卷）
+# =========================================================
+
+services:
+
+  # ---- 应用主体（单体）----
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: silver-guard-app
+    ports:
+      - "8080:8080"
+    environment:
+      # Spring Boot 配置（通过环境变量注入，敏感信息由 .env 管理）
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/silver_guard?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=silver_guard_app
+      - SPRING_DATASOURCE_PASSWORD=${DB_APP_PASSWORD}
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SPRING_REDIS_PORT=6379
+      # LLM 配置（通义千问）
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+      - LLM_MODEL=qwen-plus
+      # Nacos 配置中心（Phase 1 暂不使用，注释保留）
+      # - SPRING_CLOUD_NACOS_DISCOVERY_ENABLED=false
+      # - SPRING_CLOUD_NACOS_CONFIG_ENABLED=false
+      # JVM 参数
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC
+      # 时区
+      - TZ=Asia/Shanghai
+    volumes:
+      # 挂载日志目录，便于宿主机查看
+      - ./logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - silver-guard-net
+    restart: unless-stopped
+
+  # ---- MySQL 8.0 主数据库----
+  mysql:
+    image: mysql:8.0
+    container_name: silver-guard-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=silver_guard
+      - MYSQL_USER=silver_guard_app
+      - MYSQL_PASSWORD=${DB_APP_PASSWORD}
+      - TZ=Asia/Shanghai
+      # MySQL 8.0 推荐配置
+      - MYSQL_DEFAULT_AUTHENTICATION_PLUGIN=mysql_native_password
+    command:
+      # 生产级参数：InnoDB 配置、日志、时区、字符集
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+      - --log-error-verbosity=2
+      - --innodb-buffer-pool-size=128M
+      - --innodb-log-file-size=48M
+      - --max-connections=200
+      - --slow-query-log=1
+      - --slow-query-log-file=/var/log/mysql/slow.log
+      - --long-query-time=1
+    volumes:
+      # 初始化脚本（Flyway 迁移或手动建表）
+      - ./sql/init:/docker-entrypoint-initdb.d
+      # 数据持久化
+      - mysql-data:/var/lib/mysql
+      - mysql-logs:/var/log/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - silver-guard-net
+    restart: unless-stopped
+
+  # ---- Redis 7.x 缓存----
+  redis:
+    image: redis:7-alpine
+    container_name: silver-guard-redis
+    ports:
+      - "6379:6379"
+    command:
+      # 生产级参数：持久化、安全配置、内存
+      - --requirepass ${REDIS_PASSWORD}
+      - --maxmemory=256mb
+      - --maxmemory-policy=allkeys-lru
+      - --appendonly=yes
+      - --appendfsync=everysec
+      - --slowlog-log-slower-than=10000
+      - --slowlog-max-len=128
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - silver-guard-net
+    restart: unless-stopped
+
+  # ---- Nginx 反向代理（前后端分离 + API 路由）----
+  nginx:
+    image: nginx:alpine
+    container_name: silver-guard-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - app
+    networks:
+      - silver-guard-net
+    restart: unless-stopped
+
+networks:
+  silver-guard-net:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  mysql-logs:
+  redis-data:

@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI社区独居老人智能巡检与安全预警系统 | 创意展示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0f2744;
+    --ink-soft:#2b4567;
+    --ink-mute:#5c7291;
+    --line:#e4e8ee;
+    --bg:#f7f9fb;
+    --paper:#ffffff;
+    --accent:#e8833a;
+    --accent-soft:#fff2e5;
+    --teal:#2f7a7a;
+    --ok:#3f7a5b;
+    --warn:#b5552a;
+    --shadow:0 1px 2px rgba(15,39,68,.04),0 12px 32px -12px rgba(15,39,68,.16);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+    line-height:1.75;
+    font-size:16px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+  .serif{font-family:"Noto Serif SC",serif}
+
+  /* ===== 顶部导航 ===== */
+  .nav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,255,255,.82);
+    backdrop-filter:saturate(1.2) blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    max-width:1200px;margin:0 auto;padding:18px 40px;
+    display:flex;align-items:center;justify-content:space-between;gap:24px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;font-weight:700;color:var(--ink);letter-spacing:.5px}
+  .brand-mark{
+    width:30px;height:30px;border:1.5px solid var(--ink);
+    display:grid;place-items:center;border-radius:6px;
+    background:var(--accent-soft);position:relative;
+  }
+  .brand-mark::before{
+    content:"";width:10px;height:10px;background:var(--ink);border-radius:50%;
+    box-shadow:0 0 0 3px #fff,0 0 0 4px var(--accent);
+  }
+  .nav ul{list-style:none;display:flex;gap:28px;font-size:14px;color:var(--ink-soft)}
+  .nav ul a{color:inherit;text-decoration:none;padding:6px 2px;border-bottom:2px solid transparent;transition:.2s}
+  .nav ul a:hover{color:var(--ink);border-color:var(--accent)}
+  .meta{font-size:12px;color:var(--ink-mute);letter-spacing:1.5px;text-transform:uppercase}
+
+  /* ===== Hero ===== */
+  .hero{
+    position:relative;overflow:hidden;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  .hero::before{
+    content:"";position:absolute;inset:0;
+    background-image:
+      radial-gradient(circle at 85% 20%,rgba(232,131,58,.08),transparent 45%),
+      radial-gradient(circle at 15% 80%,rgba(47,122,122,.07),transparent 50%);
+    pointer-events:none;
+  }
+  .hero-grid{
+    position:absolute;inset:0;opacity:.4;
+    background-image:
+      linear-gradient(var(--line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:56px 56px;
+    mask-image:linear-gradient(180deg,rgba(0,0,0,.35),transparent 75%);
+    pointer-events:none;
+  }
+  .hero-inner{
+    position:relative;max-width:1200px;margin:0 auto;
+    padding:96px 40px 120px;
+    display:grid;grid-template-columns:1.1fr .9fr;gap:64px;align-items:center;
+  }
+  .kicker{
+    display:inline-flex;align-items:center;gap:10px;
+    font-size:12px;letter-spacing:3px;text-transform:uppercase;
+    color:var(--ink-mute);padding:8px 14px;
+    border:1px solid var(--line);border-radius:999px;background:#fff;
+  }
+  .kicker .dot{width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 0 3px rgba(232,131,58,.18)}
+  h1.title{
+    font-family:"Noto Serif SC",serif;font-weight:900;
+    font-size:54px;line-height:1.22;letter-spacing:1px;color:var(--ink);
+    margin:26px 0 18px;
+  }
+  h1.title .hl{color:var(--accent);position:relative;display:inline-block}
+  h1.title .hl::after{
+    content:"";position:absolute;left:0;right:0;bottom:2px;height:10px;
+    background:var(--accent-soft);z-index:-1;border-radius:2px;
+  }
+  .subtitle{font-size:18px;color:var(--ink-soft);max-width:560px;line-height:1.9}
+  .hero-cta{margin-top:38px;display:flex;gap:14px;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:14px 24px;border-radius:8px;font-size:15px;font-weight:500;
+    text-decoration:none;color:#fff;background:var(--ink);
+    border:1px solid var(--ink);transition:.2s;letter-spacing:1px;
+  }
+  .btn:hover{background:var(--accent);border-color:var(--accent);transform:translateY(-1px)}
+  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn.ghost:hover{background:var(--ink);color:#fff}
+  .btn .arrow{transition:.2s}
+  .btn:hover .arrow{transform:translateX(3px)}
+
+  .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:56px}
+  .stat{
+    padding:22px 24px;border:1px solid var(--line);border-radius:10px;background:#fff;
+    position:relative;overflow:hidden;
+  }
+  .stat .num{font-family:"Noto Serif SC",serif;font-size:34px;font-weight:700;color:var(--ink);line-height:1}
+  .stat .num small{font-size:16px;color:var(--ink-mute);margin-left:4px;font-weight:500}
+  .stat .label{margin-top:10px;font-size:13px;color:var(--ink-soft);letter-spacing:1px}
+  .stat::after{
+    content:"";position:absolute;top:0;left:0;height:3px;width:100%;
+    background:linear-gradient(90deg,var(--accent),transparent);
+  }
+  .stat:nth-child(2)::after{background:linear-gradient(90deg,var(--teal),transparent)}
+  .stat:nth-child(3)::after{background:linear-gradient(90deg,var(--ink),transparent)}
+  .stat:nth-child(4)::after{background:linear-gradient(90deg,var(--ok),transparent)}
+
+  /* ===== Hero 右侧可视化 ===== */
+  .viz{
+    position:relative;aspect-ratio:1/1.05;
+    background:#fff;border:1px solid var(--line);border-radius:14px;
+    padding:28px;box-shadow:var(--shadow);
+  }
+  .viz-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .viz-head h4{font-size:13px;letter-spacing:2px;color:var(--ink-mute);text-transform:uppercase;font-weight:500}
+  .viz-head .live{font-size:11px;color:var(--ok);display:flex;align-items:center;gap:6px;letter-spacing:1.5px}
+  .viz-head .live::before{content:"";width:6px;height:6px;background:var(--ok);border-radius:50%;animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.4;box-shadow:0 0 0 6px rgba(63,122,91,.12)}}
+
+  /* 雷达扫描 */
+  .radar{
+    position:relative;width:100%;aspect-ratio:1/1;border-radius:50%;
+    background:radial-gradient(circle,#fbfcfe,#eef3f8);
+    display:grid;place-items:center;overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .radar::before,.radar::after,.ring{
+    position:absolute;border-radius:50%;border:1px dashed #cfd7e2;
+  }
+  .radar::before{inset:6%}
+  .radar::after{inset:22%}
+  .ring{inset:38%;border:1px solid #cfd7e2}
+  .radar-cross{position:absolute;inset:0}
+  .radar-cross::before,.radar-cross::after{
+    content:"";position:absolute;background:#cfd7e2;
+  }
+  .radar-cross::before{left:50%;top:0;bottom:0;width:1px;transform:translateX(-.5px)}
+  .radar-cross::after{top:50%;left:0;right:0;height:1px;transform:translateY(-.5px)}
+  .sweep{
+    position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 0deg,rgba(232,131,58,.32),transparent 25%);
+    animation:spin 5s linear infinite;mix-blend-mode:multiply;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .blip{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 4px #fff,0 0 0 6px var(--accent)}
+  .blip.b1{top:22%;left:30%}
+  .blip.b2{top:60%;left:68%;background:var(--accent);box-shadow:0 0 0 4px #fff,0 0 0 6px var(--ink)}
+  .blip.b3{top:72%;left:24%;background:var(--teal);box-shadow:0 0 0 4px #fff,0 0 0 6px var(--teal)}
+  .house{
+    position:absolute;width:44px;height:44px;border-radius:10px;background:#fff;border:1px solid var(--line);
+    display:grid;place-items:center;font-size:20px;
+  }
+  .house.h1{top:10%;left:35%}
+  .house.h2{top:68%;left:58%;background:var(--accent-soft);border-color:#e9c6a6;color:var(--accent)}
+
+  /* 迷你状态卡片叠放 */
+  .mini-card{
+    position:absolute;background:#fff;border:1px solid var(--line);
+    border-radius:10px;padding:12px 14px;box-shadow:0 8px 20px -10px rgba(15,39,68,.2);
+    font-size:12px;min-width:170px;
+  }
+  .mini-card .mc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:var(--ink-mute);font-size:11px;letter-spacing:1px}
+  .mini-card .mc-body{font-weight:600;color:var(--ink);font-size:13px}
+  .mini-card .mc-bar{height:4px;background:#eef1f6;border-radius:2px;margin-top:8px;overflow:hidden}
+  .mini-card .mc-bar span{display:block;height:100%;background:var(--accent);border-radius:2px}
+  .mini-card.green .mc-bar span{background:var(--ok)}
+  .mini-card.blue .mc-bar span{background:var(--ink-soft)}
+  .mc-1{top:-18px;right:-12px;transform:rotate(-2deg)}
+  .mc-2{bottom:24px;left:-18px;transform:rotate(1.5deg)}
+  .mc-3{top:38%;right:-30px;transform:rotate(3deg)}
+
+  /* ===== Section 通用 ===== */
+  section{padding:110px 40px;position:relative}
+  .wrap{max-width:1200px;margin:0 auto}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;margin-bottom:56px;flex-wrap:wrap}
+  .sec-head .label{font-size:12px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;font-weight:600}
+  .sec-head h2{
+    font-family:"Noto Serif SC",serif;font-weight:700;font-size:38px;
+    color:var(--ink);margin-top:14px;line-height:1.3;letter-spacing:1px;
+  }
+  .sec-head .lead{max-width:520px;color:var(--ink-soft);font-size:15px}
+  .sec-num{font-family:"JetBrains Mono",monospace;font-size:14px;color:var(--ink-mute);letter-spacing:3px}
+
+  /* ===== 项目概述 ===== */
+  .overview{background:#fff}
+  .overview-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:56px;align-items:start}
+  .prose{font-size:16.5px;color:var(--ink-soft);line-height:2}
+  .prose p+p{margin-top:18px}
+  .prose strong{color:var(--ink);font-weight:600}
+  .tag-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .tag{
+    font-size:13px;padding:6px 14px;border-radius:999px;
+    background:var(--bg);color:var(--ink-soft);border:1px solid var(--line);
+  }
+  .tag.solid{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .tag.accent{background:var(--accent-soft);color:#a04e1a;border-color:#f0d6bb}
+
+  .info-card{
+    border:1px solid var(--line);border-radius:14px;padding:30px;background:var(--bg);
+  }
+  .info-card h3{font-size:14px;color:var(--ink-mute);letter-spacing:2px;text-transform:uppercase;font-weight:500;margin-bottom:18px}
+  .kv{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px dashed var(--line);font-size:14.5px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--ink-mute)}
+  .kv .v{color:var(--ink);font-weight:500;text-align:right;font-family:"Noto Serif SC",serif}
+
+  /* ===== 社会痛点 ===== */
+  .pain{background:var(--bg)}
+  .pain-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .pain-card{
+    background:#fff;border:1px solid var(--line);border-radius:14px;padding:30px 28px;
+    position:relative;transition:.3s;overflow:hidden;
+  }
+  .pain-card:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:#d8dfea}
+  .pain-card .ic{
+    width:44px;height:44px;border-radius:10px;background:var(--accent-soft);
+    display:grid;place-items:center;color:var(--accent);font-size:20px;margin-bottom:20px;font-weight:700;
+  }
+  .pain-card:nth-child(2) .ic{background:#e9eef6;color:var(--ink)}
+  .pain-card:nth-child(3) .ic{background:#eaf5f0;color:var(--teal)}
+  .pain-card h3{font-family:"Noto Serif SC",serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:12px}
+  .pain-card p{color:var(--ink-soft);font-size:14.5px;line-height:1.85}
+  .pain-card .badge{
+    position:absolute;top:22px;right:24px;font-size:11px;letter-spacing:2px;
+    color:var(--ink-mute);font-family:"JetBrains Mono",monospace;
+  }
+
+  /* 数据图表区 */
+  .chart-wrap{margin-top:56px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:36px}
+  .chart-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:28px;flex-wrap:wrap;gap:12px}
+  .chart-head h3{font-family:"Noto Serif SC",serif;font-size:22px;color:var(--ink)}
+  .chart-head .src{font-size:12px;color:var(--ink-mute)}
+  .bars{display:flex;align-items:flex-end;gap:26px;height:220px;padding:10px 0 40px;border-bottom:1px solid var(--line);position:relative}
+  .bars::before{content:"";position:absolute;left:0;right:0;top:33.3%;height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 4px,transparent 4px 10px);opacity:.7}
+  .bars::after{content:"";position:absolute;left:0;right:0;top:66.6%;height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 4px,transparent 4px 10px);opacity:.7}
+  .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;height:100%;justify-content:flex-end}
+  .bar .col{
+    width:100%;max-width:46px;border-radius:6px 6px 2px 2px;
+    background:linear-gradient(180deg,var(--ink),var(--ink-soft));
+    position:relative;transition:height .8s ease;
+  }
+  .bar:nth-child(odd) .col{background:linear-gradient(180deg,var(--accent),#c9691f)}
+  .bar .val{position:absolute;top:-22px;font-size:12.5px;font-weight:600;color:var(--ink);font-family:"JetBrains Mono",monospace}
+  .bar .cat{font-size:12.5px;color:var(--ink-soft);margin-top:10px;text-align:center;line-height:1.5}
+
+  /* ===== 目标人群 ===== */
+  .audience{background:#fff}
+  .persona-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .persona{
+    border:1px solid var(--line);border-radius:14px;padding:30px;position:relative;
+    background:linear-gradient(180deg,#fff,var(--bg));
+  }
+  .persona .avatar{
+    width:60px;height:60px;border-radius:50%;background:var(--ink);
+    display:grid;place-items:center;color:#fff;font-family:"Noto Serif SC",serif;font-size:22px;font-weight:700;
+    margin-bottom:18px;letter-spacing:1px;
+  }
+  .persona.p2 .avatar{background:var(--accent)}
+  .persona.p3 .avatar{background:var(--teal)}
+  .persona h3{font-family:"Noto Serif SC",serif;font-size:19px;color:var(--ink);margin-bottom:4px}
+  .persona .role{font-size:12.5px;color:var(--ink-mute);letter-spacing:2px;text-transform:uppercase;margin-bottom:18px}
+  .persona .desc{font-size:14px;color:var(--ink-soft);line-height:1.85;margin-bottom:16px}
+  .persona ul{list-style:none}
+  .persona ul li{
+    font-size:13.5px;color:var(--ink-soft);padding:8px 0 8px 22px;
+    border-top:1px dashed var(--line);position:relative;
+  }
+  .persona ul li::before{
+    content:"";position:absolute;left:2px;top:16px;width:10px;height:10px;border-radius:50%;
+    border:1.5px solid var(--accent);background:#fff;
+  }
+  .persona.p2 ul li::before{border-color:var(--ink)}
+  .persona.p3 ul li::before{border-color:var(--teal)}
+  .persona ul li:first-child{border-top:0}
+
+  /* ===== 功能介绍 ===== */
+  .feature{background:var(--bg)}
+  .feature-main{display:grid;grid-template-columns:1fr 1.2fr;gap:48px;align-items:center;margin-bottom:60px}
+  .feature-visual{
+    background:#fff;border:1px solid var(--line);border-radius:14px;padding:32px;
+    box-shadow:var(--shadow);
+  }
+  .timeline{position:relative;padding-left:30px}
+  .timeline::before{content:"";position:absolute;left:10px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,var(--accent),var(--ink))}
+  .tl-item{position:relative;padding-bottom:26px}
+  .tl-item:last-child{padding-bottom:0}
+  .tl-item::before{
+    content:"";position:absolute;left:-26px;top:4px;width:14px;height:14px;border-radius:50%;
+    background:#fff;border:2px solid var(--ink);box-shadow:0 0 0 4px var(--accent-soft);
+  }
+  .tl-item:nth-child(even)::before{border-color:var(--accent);box-shadow:0 0 0 4px #fff}
+  .tl-item h4{font-family:"Noto Serif SC",serif;font-size:17px;color:var(--ink);margin-bottom:6px}
+  .tl-item p{font-size:14px;color:var(--ink-soft);line-height:1.8}
+  .tl-item .step{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink-mute);letter-spacing:2px;margin-bottom:2px}
+
+  .feature-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .f-card{
+    background:#fff;border:1px solid var(--line);border-radius:12px;padding:26px 22px;
+    transition:.3s;position:relative;
+  }
+  .f-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+  .f-card .num{
+    font-family:"Noto Serif SC",serif;font-size:36px;font-weight:900;
+    color:var(--accent);line-height:1;margin-bottom:14px;letter-spacing:-1px;
+  }
+  .f-card:nth-child(even) .num{color:var(--ink)}
+  .f-card h4{font-family:"Noto Serif SC",serif;font-size:16.5px;color:var(--ink);margin-bottom:8px;font-weight:700}
+  .f-card p{font-size:13.5px;color:var(--ink-soft);line-height:1.75}
+  .f-card .line{
+    height:2px;width:40px;background:var(--ink);margin-top:18px;
+    transition:.3s;
+  }
+  .f-card:hover .line{width:100%;background:var(--accent)}
+
+  /* ===== 社会价值 ===== */
+  .value{background:#fff}
+  .value-grid{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-bottom:48px}
+  .value-card{
+    border:1px solid var(--line);border-radius:14px;padding:34px;background:var(--bg);
+    display:flex;gap:22px;align-items:flex-start;
+  }
+  .value-card .v-num{
+    flex-shrink:0;width:54px;height:54px;border-radius:12px;
+    background:var(--ink);color:#fff;display:grid;place-items:center;
+    font-family:"Noto Serif SC",serif;font-size:22px;font-weight:700;
+  }
+  .value-card:nth-child(even) .v-num{background:var(--accent)}
+  .value-card h3{font-family:"Noto Serif SC",serif;font-size:19px;color:var(--ink);margin-bottom:8px}
+  .value-card p{font-size:14.5px;color:var(--ink-soft);line-height:1.85}
+
+  .impact{
+    background:linear-gradient(135deg,var(--ink) 0%,#1d3c66 100%);
+    border-radius:18px;padding:60px 56px;color:#fff;position:relative;overflow:hidden;
+  }
+  .impact::before{
+    content:"";position:absolute;inset:0;opacity:.12;
+    background-image:radial-gradient(circle,rgba(255,255,255,.6) 1px,transparent 1px);
+    background-size:22px 22px;
+  }
+  .impact-inner{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:30px;text-align:center}
+  .impact h3{
+    grid-column:1/-1;font-family:"Noto Serif SC",serif;font-size:26px;font-weight:700;margin-bottom:10px;
+    letter-spacing:1.5px;
+  }
+  .impact .sub{grid-column:1/-1;color:rgba(255,255,255,.7);font-size:14px;margin-bottom:34px;letter-spacing:2px}
+  .impact-item .n{font-family:"Noto Serif SC",serif;font-size:46px;font-weight:900;color:#fff;line-height:1}
+  .impact-item .n small{font-size:18px;color:rgba(255,255,255,.7);margin-left:4px;font-weight:500}
+  .impact-item .t{margin-top:12px;font-size:13px;color:rgba(255,255,255,.75);letter-spacing:2px}
+
+  /* ===== Footer ===== */
+  footer{border-top:1px solid var(--line);background:#fff;padding:42px 40px}
+  .foot-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px}
+  .foot-inner .l{font-size:13.5px;color:var(--ink-mute)}
+  .foot-inner .r{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--ink-mute);letter-spacing:2px}
+
+  /* ===== 滚动淡入 ===== */
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .9s ease,transform .9s ease}
+  .reveal.on{opacity:1;transform:none}
+
+  /* ===== 响应式 ===== */
+  @media (max-width:1020px){
+    .hero-inner{grid-template-columns:1fr;gap:48px;padding:70px 28px 90px}
+    h1.title{font-size:40px}
+    .overview-grid,.feature-main,.value-grid{grid-template-columns:1fr;gap:32px}
+    .pain-grid,.persona-grid,.feature-cards{grid-template-columns:repeat(2,1fr)}
+    .impact{padding:44px 30px}
+    .impact-inner{grid-template-columns:repeat(2,1fr)}
+    section{padding:80px 28px}
+    .nav-inner{padding:16px 28px}
+    .nav ul{display:none}
+  }
+  @media (max-width:620px){
+    h1.title{font-size:32px}
+    .sec-head h2{font-size:28px}
+    .pain-grid,.persona-grid,.feature-cards{grid-template-columns:1fr}
+    .hero-stats{grid-template-columns:1fr 1fr}
+    .impact-inner{grid-template-columns:1fr 1fr;gap:24px}
+    .impact-item .n{font-size:34px}
+  }
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <span>智护长者 · Silver Guard</span>
+    </div>
+    <ul>
+      <li><a href="#overview">项目概述</a></li>
+      <li><a href="#pain">社会痛点</a></li>
+      <li><a href="#audience">目标人群</a></li>
+      <li><a href="#feature">功能介绍</a></li>
+      <li><a href="#value">社会价值</a></li>
+    </ul>
+    <span class="meta">AI · Social Innovation</span>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div>
+      <span class="kicker"><span class="dot"></span>AI 社会服务创新作品</span>
+      <h1 class="title">
+        AI社区<span class="hl">独居老人</span><br>
+        智能巡检与<span class="hl">安全预警</span>系统
+      </h1>
+      <p class="subtitle">
+        以人工智能守护每一位独居长者。通过智能监测、异常识别与自动预警，
+        辅助社区网格员完成养老巡检，降低意外风险，提升社区数字化养老服务能力。
+      </p>
+      <div class="hero-cta">
+        <a href="#overview" class="btn">了解方案 <span class="arrow">→</span></a>
+        <a href="#value" class="btn ghost">查看价值</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><div class="num">1.4<small>亿</small></div><div class="label">中国65岁以上老年人口</div></div>
+        <div class="stat"><div class="num">24.7<small>%</small></div><div class="label">独居老人占比持续上升</div></div>
+        <div class="stat"><div class="num">7×24<small>h</small></div><div class="label">全天候智能巡检</div></div>
+        <div class="stat"><div class="num">&lt; 30<small>s</small></div><div class="label">异常事件预警响应</div></div>
+      </div>
+    </div>
+
+    <!-- 右侧可视化 -->
+    <div class="viz">
+      <div class="viz-head">
+        <h4>Real-time Dashboard</h4>
+        <span class="live">MONITORING</span>
+      </div>
+      <div class="radar">
+        <div class="ring"></div>
+        <div class="radar-cross"></div>
+        <div class="sweep"></div>
+        <div class="blip b1"></div>
+        <div class="blip b2"></div>
+        <div class="blip b3"></div>
+        <div class="house h1">🏠</div>
+        <div class="house h2">⚠</div>
+      </div>
+
+      <div class="mini-card mc-1">
+        <div class="mc-top"><span>网格 07</span><span class="mono">NORMAL</span></div>
+        <div class="mc-body">独居长者 · 活动正常</div>
+        <div class="mc-bar"><span style="width:78%"></span></div>
+      </div>
+      <div class="mini-card mc-2 green">
+        <div class="mc-top"><span>张奶奶家</span><span class="mono">SAFE</span></div>
+        <div class="mc-body">夜间心率平稳 · 98 bpm</div>
+        <div class="mc-bar"><span style="width:92%"></span></div>
+      </div>
+      <div class="mini-card mc-3 blue">
+        <div class="mc-top"><span>预警中心</span><span class="mono">ALERT</span></div>
+        <div class="mc-body">王爷爷久未活动，请核查</div>
+        <div class="mc-bar"><span style="width:46%"></span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- 项目概述 -->
+<section id="overview" class="overview">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div>
+        <span class="sec-num">— 01 / Project</span>
+        <h2>项目概述</h2>
+      </div>
+      <p class="lead">面向社区居家养老场景，以"AI + 物联网 + 网格员"协同模式，构建覆盖监测—识别—预警—处置闭环的智能养老服务系统。</p>
+    </div>
+
+    <div class="overview-grid">
+      <div class="prose reveal">
+        <p>
+          中国正快速步入深度老龄化社会，<strong>独居老人数量超过 2800 万</strong>，
+          居家意外已成为威胁长者生命健康的重要风险源。社区网格员承担着繁重的巡检任务，
+          却面临人力不足、信息不对称、响应滞后等现实挑战。
+        </p>
+        <p>
+          本项目以"科技赋能，温度随行"为核心理念，融合
+          <strong>多源传感器数据融合</strong>、<strong>计算机视觉异常识别</strong>、
+          <strong>大模型智能研判</strong>三大核心技术能力，
+          将被动的人工巡检升级为全天候智能监测，让每一位独居老人都能获得
+          <strong>7 × 24 小时的隐形守护</strong>。
+        </p>
+        <p>
+          我们相信：<strong>好的科技，应如春雨般润物无声</strong>；
+          好的养老，应让长者保有尊严与独立。AI 不替代人情，而是把人情送达得更及时。
+        </p>
+        <div class="tag-row">
+          <span class="tag solid">智慧养老</span>
+          <span class="tag accent">民生服务</span>
+          <span class="tag">AI 预警</span>
+          <span class="tag">社区治理</span>
+          <span class="tag">边缘计算</span>
+          <span class="tag">隐私优先</span>
+        </div>
+      </div>
+
+      <div class="info-card reveal">
+        <h3>— Project Info</h3>
+        <div class="kv"><span class="k">项目名称</span><span class="v">智护长者 Silver Guard</span></div>
+        <div class="kv"><span class="k">核心定位</span><span class="v">AI 独居老人智能巡检</span></div>
+        <div class="kv"><span class="k">应用场景</span><span class="v">社区居家养老</span></div>
+        <div class="kv"><span class="k">服务对象</span><span class="v">独居 / 空巢 / 高龄老人</span></div>
+        <div class="kv"><span class="k">协作角色</span><span class="v">社区网格员、家属</span></div>
+        <div class="kv"><span class="k">关键技术</span><span class="v">AI 视觉 · 传感器 · LLM</span></div>
+        <div class="kv"><span class="k">响应时间</span><span class="v">&lt; 30 秒预警</span></div>
+        <div class="kv"><span class="k">数据合规</span><span class="v">本地运算 · 隐私优先</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 社会痛点 -->
+<section id="pain" class="pain">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div>
+        <span class="sec-num">— 02 / Challenges</span>
+        <h2>社会痛点</h2>
+      </div>
+      <p class="lead">看得见的老龄化，看不见的守护缺口。我们梳理了社区养老面临的三重现实困境。</p>
+    </div>
+
+    <div class="pain-grid">
+      <div class="pain-card reveal">
+        <span class="badge">NO. 01</span>
+        <div class="ic">!</div>
+        <h3>人力不足，巡检覆盖难</h3>
+        <p>每位社区网格员平均对接 200+ 户家庭，独居老人分散居住、作息各异，常规上门巡检难以高频全覆盖，存在明显空档与盲区。</p>
+      </div>
+      <div class="pain-card reveal">
+        <span class="badge">NO. 02</span>
+        <div class="ic">?</div>
+        <h3>异常发现迟，救援窗口小</h3>
+        <p>跌倒、突发疾病、长时间未活动等异常事件，往往在数小时甚至数天后才被发现，错过黄金救援时间，酿成不可挽回的后果。</p>
+      </div>
+      <div class="pain-card reveal">
+        <span class="badge">NO. 03</span>
+        <div class="ic">÷</div>
+        <h3>信息孤岛，协同效率低</h3>
+        <p>老人、家属、网格员、社区、医疗机构之间缺乏统一信息协同平台，事件处置依赖电话与纸质记录，流程慢、记录不完整。</p>
+      </div>
+    </div>
+
+    <!-- 数据图表 -->
+    <div class="chart-wrap reveal">
+      <div class="chart-head">
+        <h3>社区巡检挑战 · 关键数据</h3>
+        <span class="src">* 数据为示意性统计，用于项目展示</span>
+      </div>
+      <div class="bars">
+        <div class="bar"><span class="val">2800万</span><div class="col" style="height:88%"></div><span class="cat">独居老人<br>总数</span></div>
+        <div class="bar"><span class="val">40%</span><div class="col" style="height:54%"></div><span class="cat">长者曾发生<br>居家意外</span></div>
+        <div class="bar"><span class="val">62%</span><div class="col" style="height:76%"></div><span class="cat">网格员认为<br>人力不足</span></div>
+        <div class="bar"><span class="val">3h</span><div class="col" style="height:44%"></div><span class="cat">平均发现<br>异常耗时</span></div>
+        <div class="bar"><span class="val">85%</span><div class="col" style="height:96%"></div><span class="cat">老人希望<br>在家养老</span></div>
+        <div class="bar"><span class="val">2.3x</span><div class="col" style="height:70%"></div><span class="cat">AI 可提升<br>巡检效率</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 目标人群 -->
+<section id="audience" class="audience">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div>
+        <span class="sec-num">— 03 / Audience</span>
+        <h2>目标人群</h2>
+      </div>
+      <p class="lead">三类核心用户共同构成系统的"铁三角"：长者被守护、网格员更高效、家属更安心。</p>
+    </div>
+
+    <div class="persona-grid">
+      <div class="persona p1 reveal">
+        <div class="avatar">长</div>
+        <h3>独居 / 高龄老人</h3>
+        <div class="role">Primary Users</div>
+        <p class="desc">65 岁以上、独居或空巢老人，慢性病患者、行动不便者是重点关爱对象。</p>
+        <ul>
+          <li>希望独立、有尊严地居家养老</li>
+          <li>在意个人隐私与操作简单</li>
+          <li>渴望安全、陪伴与及时响应</li>
+          <li>子女不在身边，生活偶有不便</li>
+        </ul>
+      </div>
+      <div class="persona p2 reveal">
+        <div class="avatar">格</div>
+        <h3>社区网格员 / 社工</h3>
+        <div class="role">Operators</div>
+        <p class="desc">社区一线工作人员，承担养老巡检、关怀、应急协调等多项繁重任务。</p>
+        <ul>
+          <li>希望减少机械重复、聚焦人情味关怀</li>
+          <li>需要精准、优先级明确的工作清单</li>
+          <li>欢迎可操作、学习成本低的数字化工具</li>
+          <li>希望事件处置流程留痕可追溯</li>
+        </ul>
+      </div>
+      <div class="persona p3 reveal">
+        <div class="avatar">亲</div>
+        <h3>家属 / 子女及社区机构</h3>
+        <div class="role">Stakeholders</div>
+        <p class="desc">关注父母安全但因工作、距离难以及时照料的子女，及社区、医疗、民政机构。</p>
+        <ul>
+          <li>希望随时了解父母动态与健康</li>
+          <li>紧急情况下能第一时间收到通知</li>
+          <li>机构端关注数据统计与风险预警</li>
+          <li>关注成本可控与可持续运营</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 功能介绍 -->
+<section id="feature" class="feature">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div>
+        <span class="sec-num">— 04 / Features</span>
+        <h2>功能介绍</h2>
+      </div>
+      <p class="lead">从数据感知到智能研判，从自动预警到协同处置，四大环节环环相扣、层层递进。</p>
+    </div>
+
+    <div class="feature-main">
+      <div class="feature-visual reveal">
+        <h3 style="font-family:'Noto Serif SC',serif;color:var(--ink);font-size:18px;margin-bottom:22px;letter-spacing:1px">处置流程闭环</h3>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="step">STEP 01</div>
+            <h4>多源感知 · 数据采集</h4>
+            <p>毫米波雷达、门窗传感、红外人体感应、智能手环等多终端实时采集老人日常活动与生理数据。</p>
+          </div>
+          <div class="tl-item">
+            <div class="step">STEP 02</div>
+            <h4>AI 研判 · 异常识别</h4>
+            <p>边缘设备实时识别跌倒、长时间静止、异常作息；云端大模型综合研判风险等级与误报过滤。</p>
+          </div>
+          <div class="tl-item">
+            <div class="step">STEP 03</div>
+            <h4>分级预警 · 多端推送</h4>
+            <p>按风险级别向网格员 APP、家属小程序、社区大屏推送预警信息，高风险电话+短信双通道。</p>
+          </div>
+          <div class="tl-item">
+            <div class="step">STEP 04</div>
+            <h4>协同处置 · 记录闭环</h4>
+            <p>网格员上门核实、记录处置结果；系统自动形成事件档案与周报月报，持续优化预警策略。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <h3 style="font-family:'Noto Serif SC',serif;font-size:20px;color:var(--ink);margin-bottom:16px;letter-spacing:1px">四大核心功能模块</h3>
+        <p class="prose" style="font-size:14.5px;margin-bottom:0">
+          以 AI 为内核，以场景为边界，模块独立可解耦部署，
+          既能"即用即走"，亦可随社区治理需求平滑升级。
+        </p>
+      </div>
+    </div>
+
+    <div class="feature-cards">
+      <div class="f-card reveal">
+        <div class="num">01</div>
+        <h4>智能感知网络</h4>
+        <p>多传感器融合，非接触式采集，尊重隐私，支持老人无感知佩戴。</p>
+        <div class="line"></div>
+      </div>
+      <div class="f-card reveal">
+        <div class="num">02</div>
+        <h4>异常行为识别</h4>
+        <p>跌倒、久卧不起、夜间频繁离床等异常自动识别，准确率高，误报率低。</p>
+        <div class="line"></div>
+      </div>
+      <div class="f-card reveal">
+        <div class="num">03</div>
+        <h4>分级预警协同</h4>
+        <p>四级预警机制，网格员、家属、社区、医疗机构联动，响应时长 &lt; 30 秒。</p>
+        <div class="line"></div>
+      </div>
+      <div class="f-card reveal">
+        <div class="num">04</div>
+        <h4>智慧巡检助手</h4>
+        <p>AI 生成个性化巡检清单与关怀建议，辅助网格员高效完成日常工作。</p>
+        <div class="line"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 社会价值 -->
+<section id="value" class="value">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <div>
+        <span class="sec-num">— 05 / Impact</span>
+        <h2>社会价值</h2>
+      </div>
+      <p class="lead">让技术有温度，让社区有关怀，让每一位长者都能被看见、被守护。</p>
+    </div>
+
+    <div class="value-grid">
+      <div class="value-card reveal">
+        <div class="v-num">安</div>
+        <div>
+          <h3>守护长者居家安全</h3>
+          <p>7×24 小时无形守护，异常事件第一时间预警，显著降低独居老人意外风险与家属后顾之忧。</p>
+        </div>
+      </div>
+      <div class="value-card reveal">
+        <div class="v-num">效</div>
+        <div>
+          <h3>释放网格员专业价值</h3>
+          <p>把重复性巡检工作交给 AI，让网格员回归人际关怀，工作效率提升，服务质量同步提高。</p>
+        </div>
+      </div>
+      <div class="value-card reveal">
+        <div class="v-num">温</div>
+        <div>
+          <h3>传承社区互助文化</h3>
+          <p>以数字平台激活邻里守望，让社区成为有温度的"熟人社会"，体现基层治理的人文关怀。</p>
+        </div>
+      </div>
+      <div class="value-card reveal">
+        <div class="v-num">新</div>
+        <div>
+          <h3>提升数字化养老能力</h3>
+          <p>为民政、街道、社区提供可落地、可复制、可扩展的 AI 养老解决方案，助力积极老龄化国家战略。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="impact reveal">
+      <div class="impact-inner">
+        <h3>以科技之名，行温度之实</h3>
+        <div class="sub">EXPECTED IMPACT · 预期成效</div>
+        <div class="impact-item"><div class="n">7×24<small>h</small></div><div class="t">全天候智能守护</div></div>
+        <div class="impact-item"><div class="n">30<small>秒</small></div><div class="t">极速预警响应</div></div>
+        <div class="impact-item"><div class="n">60<small>%</small></div><div class="t">网格员效率提升</div></div>
+        <div class="impact-item"><div class="n">85<small>%+</small></div><div class="t">老人满意度</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-inner">
+    <div class="l">AI 社区独居老人智能巡检与安全预警系统 · 参赛作品创意展示页</div>
+    <div class="r">Silver Guard · Social Innovation · 2026</div>
+  </div>
+</footer>
+
+<script>
+  // 滚动淡入
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}
+    });
+  },{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+  // 柱状图进入动画（首次进入视口时从 0 长起）
+  const bars = document.querySelectorAll('.bar .col');
+  bars.forEach(b=>{b.dataset.h=b.style.height;b.style.height='0%'});
+  const barIo = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        bars.forEach((b,i)=>{
+          setTimeout(()=>{b.style.height=b.dataset.h},i*80);
+        });
+        barIo.disconnect();
+      }
+    });
+  },{threshold:.3});
+  const chart = document.querySelector('.bars');
+  if(chart) barIo.observe(chart);
+</script>
+</body>
+</html>
