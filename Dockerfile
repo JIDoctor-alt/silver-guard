@@ -8,13 +8,20 @@
 # --- 多阶段构建：构建阶段 ---
 FROM eclipse-temurin:21-jdk-alpine AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# 安装构建依赖（Alpine 轻量级）
+# 安装 Maven（Alpine 轻量级）
 RUN apk add --no-cache maven~=3.9
 
-# 复制 POM（优先利用 Docker 缓存层）
-COPY pom.xml .
+# 复制父 POM（优先利用 Docker 缓存层）
+COPY silver-guard/pom.xml ./pom.xml
+
+# 复制子模块 POM（利用缓存）
+COPY silver-guard/silver-guard-common/pom.xml ./silver-guard-common/pom.xml
+COPY silver-guard/silver-guard-core/pom.xml ./silver-guard-core/pom.xml
+COPY silver-guard/silver-guard-ai/pom.xml ./silver-guard-ai/pom.xml
+COPY silver-guard/silver-guard-gateway/pom.xml ./silver-guard-gateway/pom.xml
+COPY silver-guard/silver-guard-app/pom.xml ./silver-guard-app/pom.xml
 
 # 下载依赖（单独写这一层，pom 变化时才重新下载）
 RUN mvn dependency:go-offline \
@@ -23,7 +30,11 @@ RUN mvn dependency:go-offline \
         -Dmaven.repo.local=/root/.m2/repository || true
 
 # 复制源码
-COPY src ./src
+COPY silver-guard/silver-guard-common/src ./silver-guard-common/src
+COPY silver-guard/silver-guard-core/src ./silver-guard-core/src
+COPY silver-guard/silver-guard-ai/src ./silver-guard-ai/src
+COPY silver-guard/silver-guard-gateway/src ./silver-guard-gateway/src
+COPY silver-guard/silver-guard-app/src ./silver-guard-app/src
 
 # 构建 JAR（跳过测试，CI 中已执行）
 RUN mvn package \
@@ -33,11 +44,11 @@ RUN mvn package \
         -Dmaven.javadoc.skip=true \
         -Dcheckstyle.skip=true \
         -Dspotless.check.skip=true \
-        -Dspring.profiles.active=prod
+        -pl silver-guard-app -am
 
 # 提取胖 JAR
 RUN mkdir -p /app/out && \
-    cp target/silver-guard-*.jar /app/out/app.jar && \
+    cp silver-guard-app/target/silver-guard*.jar /app/out/app.jar && \
     ls -lh /app/out/
 
 
@@ -60,14 +71,13 @@ COPY --from=builder /app/out/app.jar app.jar
 # JVM 生产参数（参考，可根据容器内存调整）
 ENV JAVA_OPTS="\
     -server \
-    -Xms512m \
-    -Xmx1024m \
+    -Xms256m \
+    -Xmx512m \
     -XX:+UseG1GC \
     -XX:MaxGCPauseMillis=200 \
     -XX:+HeapDumpOnOutOfMemoryError \
     -XX:HeapDumpPath=/app/logs \
     -Djava.security.egd=file:/dev/./urandom \
-    -Dspring.profiles.active=prod \
     "
 
 # 日志目录
