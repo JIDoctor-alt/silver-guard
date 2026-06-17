@@ -4,7 +4,7 @@ import {
   DashboardOutlined,
   UserOutlined,
   AlertOutlined,
-  DeviceOutlined,
+  HddOutlined,
   CheckCircleOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -19,7 +19,7 @@ const menuItems = [
   { key: '/dashboard', icon: <DashboardOutlined />, label: '驾驶舱' },
   { key: '/elder', icon: <UserOutlined />, label: '老人档案' },
   { key: '/event', icon: <AlertOutlined />, label: '预警事件' },
-  { key: '/device', icon: <DeviceOutlined />, label: '设备管理' },
+  { key: '/device', icon: <HddOutlined />, label: '设备管理' },
   { key: '/patrol', icon: <CheckCircleOutlined />, label: '巡检记录' },
 ];
 

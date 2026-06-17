@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, Descriptions, Tag, Button, Spin, message } from 'antd';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEventDetail, type Event } from '../../api';
+import { getEventDetail, type Event } from '../../../api';
 import dayjs from 'dayjs';
 
 export default function EventDetailPage() {

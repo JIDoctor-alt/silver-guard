@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, Descriptions, Tag, Button, Spin, message } from 'antd';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getElderDetail, type Elder } from '../../api';
+import { getElderDetail, type Elder } from '../../../api';
 
 export default function ElderDetailPage() {
   const { id } = useParams();

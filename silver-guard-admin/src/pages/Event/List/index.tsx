@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Table, Card, Button, Tag, Space, Select, Spin, message, Modal, Input } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { getEventList, assignEvent, handleEvent, markFalseAlarm, type Event } from '../../api';
-import { useAppStore, useAuthStore } from '../../stores';
+import { getEventList, assignEvent, handleEvent, markFalseAlarm, type Event } from '../../../api';
+import { useAppStore, useAuthStore } from '../../../stores';
 import dayjs from 'dayjs';
 
 export default function EventListPage() {

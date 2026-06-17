@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Table, Card, Button, Tag, Space, Input, Select, Spin, message } from 'antd';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Card, Button, Tag, Space, Select, Spin, message } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { getElderList, deleteElder, type Elder } from '../../api';
-import { useAppStore } from '../../stores';
-import dayjs from 'dayjs';
+import { getElderList, deleteElder, type Elder } from '../../../api';
+import { useAppStore } from '../../../stores';
 
 export default function ElderListPage() {
   const [loading, setLoading] = useState(true);

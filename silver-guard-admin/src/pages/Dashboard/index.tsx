@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 import { Card, Row, Col, Statistic, Progress, Table, Tag, Spin } from 'antd';
 import {
   UserOutlined,
-  DeviceOutlined,
+  HddOutlined,
   AlertOutlined,
-  CheckCircleOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
 import { getDashboardSummary, getEventList, type DashboardSummary, type Event } from '../../api';
@@ -72,7 +71,7 @@ export default function DashboardPage() {
               title="设备总数 / 在线"
               value={summary?.totalDevices || 0}
               suffix={`/ ${summary?.onlineDevices || 0}`}
-              prefix={<DeviceOutlined />}
+              prefix={<HddOutlined />}
               valueStyle={{ color: '#52c41a' }}
             />
           </Card>

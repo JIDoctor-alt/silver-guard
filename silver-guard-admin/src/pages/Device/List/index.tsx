@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Table, Card, Tag, Spin, message } from 'antd';
-import { getDeviceList, type Device } from '../../api';
-import { useAppStore } from '../../stores';
+import { getDeviceList, type Device } from '../../../api';
+import { useAppStore } from '../../../stores';
 import dayjs from 'dayjs';
 
 export default function DeviceListPage() {
