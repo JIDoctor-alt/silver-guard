@@ -4,9 +4,7 @@
 const mysql = require('mysql2/promise');
 const config = require('../config');
 
-const pool = mysql.createPool({
-  host: config.MYSQL_HOST,
-  port: config.MYSQL_PORT,
+const poolOptions = {
   user: config.MYSQL_USER,
   password: config.MYSQL_PASSWORD,
   database: config.MYSQL_DATABASE,
@@ -15,7 +13,16 @@ const pool = mysql.createPool({
   queueLimit: 0,
   timezone: '+08:00',
   dateStrings: true,
-});
+};
+
+if (process.env.MYSQL_SOCKET) {
+  poolOptions.socketPath = process.env.MYSQL_SOCKET;
+} else {
+  poolOptions.host = config.MYSQL_HOST;
+  poolOptions.port = config.MYSQL_PORT;
+}
+
+const pool = mysql.createPool(poolOptions);
 
 // 启动时检测连接
 pool.on('connection', (conn) => {

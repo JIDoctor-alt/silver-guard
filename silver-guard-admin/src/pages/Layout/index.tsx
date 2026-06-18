@@ -9,6 +9,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
+  CustomerServiceOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useAppStore } from '../../stores';
 import './Layout.css';
@@ -21,6 +22,7 @@ const menuItems = [
   { key: '/event', icon: <AlertOutlined />, label: '预警事件' },
   { key: '/device', icon: <HddOutlined />, label: '设备管理' },
   { key: '/patrol', icon: <CheckCircleOutlined />, label: '巡检记录' },
+  { key: '/music', icon: <CustomerServiceOutlined />, label: '音乐创作' },
 ];
 
 export default function LayoutPage() {

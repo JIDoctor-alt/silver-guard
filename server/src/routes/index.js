@@ -8,6 +8,7 @@ const elderRouter = require('./elder');
 const eventRouter = require('./event');
 const deviceRouter = require('./device');
 const patrolRouter = require('./patrol');
+const musicRouter = require('./music');
 
 const router = express.Router();
 
@@ -28,5 +29,8 @@ router.use('/device', deviceRouter);
 
 // 巡检记录
 router.use('/patrol', patrolRouter);
+
+// 音乐创作（作曲/作词）
+router.use('/music', musicRouter);
 
 module.exports = router;
