@@ -1,5 +1,5 @@
 # =========================================================
-# Silver Guard · Docker Compose 本地开发/测试环境
+# 乐龄守护 · Docker Compose 本地开发/测试环境
 # 一键启动：前端管理后台 + Node.js 后端 + MySQL + Redis
 #
 # 使用：
@@ -13,15 +13,15 @@
 #   管理后台   → http://localhost:8091/
 #   后端 API   → http://localhost:8090/api/...
 #   Actuator   → http://localhost:8090/actuator/health
-#   MySQL      → 本机: 3316  /  容器内: 3306  (用户: silver_guard_app / app1234)
+#   MySQL      → 本机: 3316  /  容器内: 3306  (用户: leLing_guardian_app / app1234)
 #   Redis      → 本机: 6389  /  容器内: 6379  (无密码)
 #   测试账号   → 13800000001 / password123
 #
 # 环境变量（可选，在项目根目录创建 .env 文件可覆盖默认值）：
 #   MYSQL_ROOT_PASSWORD  → MySQL root 密码（默认 root1234）
-#   DB_APP_PASSWORD      → MySQL silver_guard_app 用户密码（默认 app1234）
+#   DB_APP_PASSWORD      → MySQL leLing_guardian_app 用户密码（默认 app1234）
 #   REDIS_PASSWORD       → Redis 密码（默认空，即无密码）
-#   JWT_SECRET           → JWT 签名密钥（默认 silver-guard-dev-secret-change-in-prod）
+#   JWT_SECRET           → JWT 签名密钥（默认 leLing-guardian-dev-secret-change-in-prod）
 # =========================================================
 
 services:
@@ -29,14 +29,14 @@ services:
   # ---- MySQL 8.0 主数据库 ----
   mysql:
     image: mysql:8.0
-    container_name: silver-guard-mysql
+    container_name: leling-guardian-mysql
     restart: unless-stopped
     ports:
       - "3316:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root1234}
-      MYSQL_DATABASE: silver_guard
-      MYSQL_USER: silver_guard_app
+      MYSQL_DATABASE: leling-guardian
+      MYSQL_USER: leling-guardian_app
       MYSQL_PASSWORD: ${DB_APP_PASSWORD:-app1234}
       TZ: Asia/Shanghai
     command:
@@ -50,18 +50,18 @@ services:
       - ./sql:/docker-entrypoint-initdb.d
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "silver_guard_app", "-p${DB_APP_PASSWORD:-app1234}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "leling-guardian_app", "-p${DB_APP_PASSWORD:-app1234}"]
       interval: 10s
       timeout: 5s
       retries: 15
       start_period: 60s
     networks:
-      - silver-guard-net
+      - leling-guardian-net
 
   # ---- Redis 缓存（本地开发无密码）----
   redis:
     image: redis:7-alpine
-    container_name: silver-guard-redis
+    container_name: leling-guardian-redis
     restart: unless-stopped
     ports:
       - "6389:6379"
@@ -74,14 +74,14 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - silver-guard-net
+      - leling-guardian-net
 
   # ---- Node.js 后端服务 ----
   server:
     build:
       context: .
       dockerfile: server/Dockerfile
-    container_name: silver-guard-server
+    container_name: leling-guardian-server
     restart: unless-stopped
     ports:
       - "8090:8080"
@@ -89,13 +89,13 @@ services:
       PORT: 8080
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
-      MYSQL_USER: silver_guard_app
+      MYSQL_USER: leling-guardian_app
       MYSQL_PASSWORD: ${DB_APP_PASSWORD:-app1234}
-      MYSQL_DATABASE: silver_guard
+      MYSQL_DATABASE: leling-guardian
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-      JWT_SECRET: ${JWT_SECRET:-silver-guard-dev-secret-change-in-prod}
+      JWT_SECRET: ${JWT_SECRET:-leling-guardian-dev-secret-change-in-prod}
       TZ: Asia/Shanghai
     depends_on:
       mysql:
@@ -109,14 +109,14 @@ services:
       retries: 8
       start_period: 15s
     networks:
-      - silver-guard-net
+      - leling-guardian-net
 
   # ---- Admin 管理后台（React + Nginx）----
   admin:
     build:
       context: .
-      dockerfile: silver-guard-admin/Dockerfile
-    container_name: silver-guard-admin
+      dockerfile: leling-guardian-admin/Dockerfile
+    container_name: leling-guardian-admin
     restart: unless-stopped
     ports:
       - "8091:80"
@@ -130,10 +130,10 @@ services:
       retries: 5
       start_period: 30s
     networks:
-      - silver-guard-net
+      - leling-guardian-net
 
 networks:
-  silver-guard-net:
+  leling-guardian-net:
     driver: bridge
 
 volumes:

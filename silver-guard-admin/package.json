@@ -1,7 +1,8 @@
 {
-  "name": "silver-guard-admin",
+  "name": "leling-guardian-admin",
   "private": true,
   "version": "1.0.0",
+  "description": "乐龄守护 · AI 社区养老智能巡检与音乐创作系统",
   "type": "module",
   "scripts": {
     "dev": "vite",

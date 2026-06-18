@@ -1,5 +1,6 @@
 // ============================================================
-// Silver Guard · Express 应用入口
+// 乐龄守护 · Express 应用入口
+// AI 社区养老智能巡检与音乐创作系统
 // ============================================================
 const express = require('express');
 const cors = require('cors');
@@ -27,7 +28,7 @@ app.use('/api', routes);
 
 // 健康检查
 app.get('/actuator/health', (req, res) => {
-  res.json({ status: 'UP', service: 'silver-guard-server', version: '1.0.0' });
+  res.json({ status: 'UP', service: 'leling-guardian-server', version: '1.0.0' });
 });
 
 // 404

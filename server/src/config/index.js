@@ -1,5 +1,5 @@
 // ============================================================
-// Silver Guard · 后端配置
+// 乐龄守护 · 后端配置
 // 所有环境变量统一在此导出
 // ============================================================
 
@@ -21,7 +21,7 @@ const config = {
   REDIS_PASSWORD: process.env.REDIS_PASSWORD || undefined,
 
   // JWT
-  JWT_SECRET: process.env.JWT_SECRET || 'silver-guard-dev-secret-change-in-prod',
+  JWT_SECRET: process.env.JWT_SECRET || 'leling-guardian-dev-secret-change-in-prod',
   JWT_EXPIRES_IN: '24h',
 
   // 时区

@@ -1,8 +1,8 @@
 # =========================================================
-# Silver Guard · Admin 前端 Dockerfile
+# 乐龄守护 · Admin 前端 Dockerfile
 # React 19 + Vite + Ant Design 5
 # 多阶段构建：构建阶段 → Nginx 运行阶段
-# 构建：docker build -t silver-guard-admin:latest -f silver-guard-admin/Dockerfile .
+# 构建：docker build -t leling-guardian-admin:latest -f silver-guard-admin/Dockerfile .
 # =========================================================
 
 # --- Stage 1: 构建阶段 ---

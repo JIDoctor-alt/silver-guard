@@ -1,5 +1,5 @@
 // ============================================================
-// Silver Guard · 服务启动入口
+// 乐龄守护 · 服务启动入口
 // ============================================================
 const app = require('./app');
 const config = require('./config');
@@ -43,7 +43,7 @@ async function bootstrap() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log('=============================================');
-    console.log('✓ Silver Guard Server started');
+    console.log('✓ 乐龄守护 Server started');
     console.log(`✓ HTTP: http://0.0.0.0:${PORT}`);
     console.log(`✓ Health: http://0.0.0.0:${PORT}/actuator/health`);
     console.log(`✓ API Base: http://0.0.0.0:${PORT}/api`);

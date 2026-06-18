@@ -1,5 +1,5 @@
 // ============================================================
-// Silver Guard · MySQL 连接池
+// 乐龄守护 · MySQL 连接池
 // ============================================================
 const mysql = require('mysql2/promise');
 const config = require('../config');
