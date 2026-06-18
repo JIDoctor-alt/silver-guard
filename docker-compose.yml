@@ -1,17 +1,17 @@
 # =========================================================
 # Silver Guard · Docker Compose 本地开发/测试环境
-# 一键启动：前端管理后台 + Mock API + MySQL + Redis
+# 一键启动：前端管理后台 + Node.js 后端 + MySQL + Redis
 #
 # 使用：
 #   docker compose up -d
-#   docker compose logs -f mock-api   # 查看 Mock API 日志
+#   docker compose logs -f server     # 查看后端服务日志
 #   docker compose ps                 # 所有服务状态
 #   docker compose down               # 停止（保留数据）
 #   docker compose down -v            # 停止 + 删除数据卷（清库）
 #
 # 访问地址：
 #   管理后台   → http://localhost:8091/
-#   Mock API   → http://localhost:8090/api/...
+#   后端 API   → http://localhost:8090/api/...
 #   Actuator   → http://localhost:8090/actuator/health
 #   MySQL      → 本机: 3316  /  容器内: 3306  (用户: silver_guard_app / app1234)
 #   Redis      → 本机: 6389  /  容器内: 6379  (无密码)
@@ -80,12 +80,12 @@ services:
     networks:
       - silver-guard-net
 
-  # ---- Mock API（Node.js + Express，后端 API 服务）----
-  mock-api:
+  # ---- Node.js 后端服务 ----
+  server:
     build:
       context: .
-      dockerfile: mock-api/Dockerfile
-    container_name: silver-guard-mock-api
+      dockerfile: server/Dockerfile
+    container_name: silver-guard-server
     restart: unless-stopped
     ports:
       - "8090:8080"
@@ -125,7 +125,7 @@ services:
     ports:
       - "8091:80"
     depends_on:
-      mock-api:
+      server:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]

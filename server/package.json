@@ -1,0 +1,20 @@
+{
+  "name": "silver-guard-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Silver Guard 智能养老预警系统 · Node.js 后端服务",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.13",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.14.0",
+    "redis": "^4.7.0"
+  }
+}
