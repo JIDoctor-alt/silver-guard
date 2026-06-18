@@ -6,16 +6,16 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Button, Select, Tag, Typography, Space, message, Spin, Collapse, Timeline, Modal, Input, Tabs, List, Avatar } from 'antd';
+import { Card, Row, Col, Button, Select, Tag, Typography, Space, message, Spin, Collapse, Modal, Input, Tabs, List } from 'antd';
 import {
   PlayCircleOutlined,
   SaveOutlined,
   DeleteOutlined,
   DownloadOutlined,
   ReloadOutlined,
-  MusicOutlined,
+  AudioOutlined,
   CustomerServiceOutlined,
- bulbOutlined,
+  BulbOutlined,
   ClockCircleOutlined,
   HeartOutlined
 } from '@ant-design/icons';
@@ -28,10 +28,8 @@ import {
   getMyWorks,
   saveWork,
   deleteWork,
-  Theme,
-  MusicStyle,
-  Lyrics
 } from '../../api/music';
+import type { Theme, MusicStyle, Lyrics } from '../../api/music';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -195,7 +193,7 @@ export default function MusicCreation() {
   return (
     <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
       <Title level={3} style={{ marginBottom: 24 }}>
-        <MusicOutlined style={{ marginRight: 8 }} />
+        <AudioOutlined style={{ marginRight: 8 }} />
         音乐创作中心
       </Title>
 
@@ -251,7 +249,7 @@ export default function MusicCreation() {
 
                   <Button
                     type="primary"
-                    icon={<bulbOutlined />}
+                    icon={<BulbOutlined />}
                     size="large"
                     loading={loading}
                     onClick={handleGenerateLyrics}
@@ -306,7 +304,7 @@ export default function MusicCreation() {
                   <div>
                     <Title level={4}>{customTitle || currentLyrics.title}</Title>
                     <Space style={{ marginBottom: 16 }}>
-                      <Tag icon={<MusicOutlined />} color="processing">
+                      <Tag icon={<AudioOutlined />} color="processing">
                         {currentLyrics.style}
                       </Tag>
                       <Tag icon={<ClockCircleOutlined />}>
@@ -343,7 +341,7 @@ export default function MusicCreation() {
                   </div>
                 ) : (
                   <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
-                    <MusicOutlined style={{ fontSize: 48 }} />
+                    <AudioOutlined style={{ fontSize: 48 }} />
                     <Paragraph style={{ marginTop: 16 }}>
                       请先选择主题和风格，然后点击"生成歌词"
                     </Paragraph>
@@ -366,7 +364,7 @@ export default function MusicCreation() {
                       </Button>
                     </Col>
                     <Col span={8}>
-                      <Button icon={<MusicOutlined />} block>
+                      <Button icon={<AudioOutlined />} block>
                         生成伴奏
                       </Button>
                     </Col>
@@ -393,7 +391,7 @@ export default function MusicCreation() {
                       alignItems: 'center',
                       justifyContent: 'center'
                     }}>
-                      <MusicOutlined style={{ fontSize: 48, color: 'white' }} />
+                      <AudioOutlined style={{ fontSize: 48, color: 'white' }} />
                     </div>
                   }
                   actions={[

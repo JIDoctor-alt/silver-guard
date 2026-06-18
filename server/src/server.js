@@ -6,6 +6,7 @@ const config = require('./config');
 const pool = require('./db/mysql');
 const redisClient = require('./db/redis');
 const initData = require('./db/initData');
+const ragService = require('./services/rag');
 
 const PORT = config.PORT;
 
@@ -39,6 +40,14 @@ async function bootstrap() {
     console.log('✓ Redis connected');
   } catch (e) {
     console.warn('⚠ Redis 连接失败，将以无缓存模式运行:', e.message);
+  }
+
+  // RAG 初始化（非阻塞）
+  try {
+    await ragService.init();
+    console.log('✓ RAG 服务初始化完成');
+  } catch (e) {
+    console.warn('⚠ RAG 初始化失败，将使用模拟模式:', e.message);
   }
 
   app.listen(PORT, '0.0.0.0', () => {

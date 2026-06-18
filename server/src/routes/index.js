@@ -9,6 +9,7 @@ const eventRouter = require('./event');
 const deviceRouter = require('./device');
 const patrolRouter = require('./patrol');
 const musicRouter = require('./music');
+const chatRouter = require('./chat');
 
 const router = express.Router();
 
@@ -32,5 +33,8 @@ router.use('/patrol', patrolRouter);
 
 // 音乐创作（作曲/作词）
 router.use('/music', musicRouter);
+
+// RAG 智能问答（含 SSE 流式响应）
+router.use('/chat', chatRouter);
 
 module.exports = router;

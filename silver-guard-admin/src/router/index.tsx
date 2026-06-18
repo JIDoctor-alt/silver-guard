@@ -14,6 +14,7 @@ const EventDetailPage = lazy(() => import('../pages/Event/Detail'));
 const DeviceListPage = lazy(() => import('../pages/Device/List'));
 const PatrolListPage = lazy(() => import('../pages/Patrol/List'));
 const MusicCreationPage = lazy(() => import('../pages/MusicCreation'));
+const ChatPage = lazy(() => import('../pages/Chat'));
 
 // 路由守卫：需要登录
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,7 @@ export default function Router() {
             <Route path="device" element={<DeviceListPage />} />
             <Route path="patrol" element={<PatrolListPage />} />
             <Route path="music" element={<MusicCreationPage />} />
+            <Route path="chat" element={<ChatPage />} />
           </Route>
           
           {/* 404 */}

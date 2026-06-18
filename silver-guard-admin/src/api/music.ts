@@ -5,7 +5,7 @@
  * ============================================================
  */
 
-import axios from '../utils/request';
+import axios from './request';
 
 export interface Theme {
   id: string;

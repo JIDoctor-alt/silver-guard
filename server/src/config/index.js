@@ -26,6 +26,12 @@ const config = {
 
   // 时区
   TZ: process.env.TZ || 'Asia/Shanghai',
+
+  // RAG / AI
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+  OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || '',
+  CHAT_MODEL: process.env.CHAT_MODEL || 'gpt-4o-mini',
+  EMBEDDING_MODEL: process.env.EMBEDDING_MODEL || 'text-embedding-3-small',
 };
 
 module.exports = config;

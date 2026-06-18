@@ -10,6 +10,7 @@ import {
   MenuUnfoldOutlined,
   LogoutOutlined,
   CustomerServiceOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useAppStore } from '../../stores';
 import './Layout.css';
@@ -23,6 +24,7 @@ const menuItems = [
   { key: '/device', icon: <HddOutlined />, label: '设备管理' },
   { key: '/patrol', icon: <CheckCircleOutlined />, label: '巡检记录' },
   { key: '/music', icon: <CustomerServiceOutlined />, label: '音乐创作' },
+  { key: '/chat', icon: <MessageOutlined />, label: '智能问答' },
 ];
 
 export default function LayoutPage() {
@@ -56,7 +58,7 @@ export default function LayoutPage() {
       >
         <div className="logo">
           <img src="/favicon.svg" alt="logo" style={{ width: 32, height: 32 }} />
-          {!collapsed && <span className="logo-text">智护长者</span>}
+          {!collapsed && <span className="logo-text">乐龄守护</span>}
         </div>
         <Menu
           mode="inline"
