@@ -124,8 +124,8 @@ async function initData() {
       const [elderId, userId, taskType, elderStatus, remark, followUpFlag] = records[i];
       const checkinAt = new Date(Date.now() - i * 26 * 3600 * 1000);
       await insert(
-        `INSERT INTO patrol_record (elder_id, user_id, task_type, checkin_at, elder_status, remark, follow_up_flag, community_id, gmt_create, gmt_modified, deleted)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 0)`,
+        `INSERT INTO patrol_record (elder_id, user_id, task_type, checkin_at, elder_status, remark, follow_up_flag, gmt_create, gmt_modified, deleted)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
         [elderId, userId, taskType, checkinAt, elderStatus, remark, followUpFlag, now, now]
       );
     }

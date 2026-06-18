@@ -13,8 +13,13 @@ const EventListPage = lazy(() => import('../pages/Event/List'));
 const EventDetailPage = lazy(() => import('../pages/Event/Detail'));
 const DeviceListPage = lazy(() => import('../pages/Device/List'));
 const PatrolListPage = lazy(() => import('../pages/Patrol/List'));
+<<<<<<< HEAD
 const MusicCreationPage = lazy(() => import('../pages/MusicCreation'));
 const ChatPage = lazy(() => import('../pages/Chat'));
+=======
+const AIChatPage = lazy(() => import('../pages/AIChat'));
+const MusicPage = lazy(() => import('../pages/Music'));
+>>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
 
 // 路由守卫：需要登录
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -46,8 +51,13 @@ export default function Router() {
             <Route path="event/:id" element={<EventDetailPage />} />
             <Route path="device" element={<DeviceListPage />} />
             <Route path="patrol" element={<PatrolListPage />} />
+<<<<<<< HEAD
             <Route path="music" element={<MusicCreationPage />} />
             <Route path="chat" element={<ChatPage />} />
+=======
+            <Route path="ai-chat" element={<AIChatPage />} />
+            <Route path="music" element={<MusicPage />} />
+>>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
           </Route>
           
           {/* 404 */}

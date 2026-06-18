@@ -27,11 +27,32 @@ const config = {
   // 时区
   TZ: process.env.TZ || 'Asia/Shanghai',
 
+<<<<<<< HEAD
   // RAG / AI
   OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
   OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || '',
   CHAT_MODEL: process.env.CHAT_MODEL || 'gpt-4o-mini',
   EMBEDDING_MODEL: process.env.EMBEDDING_MODEL || 'text-embedding-3-small',
+=======
+  // LLM（大模型 API，OpenAI 兼容格式）
+  LLM_API_KEY: process.env.LLM_API_KEY || '',
+  LLM_API_URL: process.env.LLM_API_URL || 'https://api.openai.com/v1',
+  LLM_MODEL: process.env.LLM_MODEL || 'gpt-4o-mini',
+
+  // LLM 作曲 · 系统提示词（可自定义，不配置则使用内置默认）
+  LLM_COMPOSE_SYSTEM_PROMPT: process.env.LLM_COMPOSE_SYSTEM_PROMPT || '',
+  LLM_COMPOSE_USER_PROMPT: process.env.LLM_COMPOSE_USER_PROMPT || '',
+
+  // LLM 作词 · 系统提示词（可自定义，不配置则使用内置默认）
+  LLM_LYRICS_SYSTEM_PROMPT: process.env.LLM_LYRICS_SYSTEM_PROMPT || '',
+  LLM_LYRICS_USER_PROMPT: process.env.LLM_LYRICS_USER_PROMPT || '',
+
+  // LLM 知识库问答 · 系统提示词（可自定义，不配置则使用内置默认）
+  LLM_RAG_SYSTEM_PROMPT: process.env.LLM_RAG_SYSTEM_PROMPT || '',
+  LLM_RAG_USER_PROMPT: process.env.LLM_RAG_USER_PROMPT || '',
+  // 自定义知识库（JSON 数组字符串，不配置则使用内置默认）
+  LLM_RAG_KNOWLEDGE: process.env.LLM_RAG_KNOWLEDGE || '',
+>>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
 };
 
 module.exports = config;

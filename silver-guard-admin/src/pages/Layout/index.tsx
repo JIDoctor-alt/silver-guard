@@ -9,8 +9,13 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
+<<<<<<< HEAD
   CustomerServiceOutlined,
   MessageOutlined,
+=======
+  RobotOutlined,
+  CustomerServiceOutlined,
+>>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
 } from '@ant-design/icons';
 import { useAuthStore, useAppStore } from '../../stores';
 import './Layout.css';
@@ -23,8 +28,14 @@ const menuItems = [
   { key: '/event', icon: <AlertOutlined />, label: '预警事件' },
   { key: '/device', icon: <HddOutlined />, label: '设备管理' },
   { key: '/patrol', icon: <CheckCircleOutlined />, label: '巡检记录' },
+<<<<<<< HEAD
   { key: '/music', icon: <CustomerServiceOutlined />, label: '音乐创作' },
   { key: '/chat', icon: <MessageOutlined />, label: '智能问答' },
+=======
+  { type: 'divider' as const },
+  { key: '/ai-chat', icon: <RobotOutlined />, label: '智能问答' },
+  { key: '/music', icon: <CustomerServiceOutlined />, label: '音乐陪伴' },
+>>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
 ];
 
 export default function LayoutPage() {

@@ -95,7 +95,22 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+<<<<<<< HEAD
       JWT_SECRET: ${JWT_SECRET:-leling-guardian-dev-secret-change-in-prod}
+=======
+      JWT_SECRET: ${JWT_SECRET:-silver-guard-dev-secret-change-in-prod}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_API_URL: ${LLM_API_URL:-https://api.openai.com/v1}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      # 系统提示词（可选，不配置则使用内置默认）
+      LLM_COMPOSE_SYSTEM_PROMPT: ${LLM_COMPOSE_SYSTEM_PROMPT:-}
+      LLM_COMPOSE_USER_PROMPT: ${LLM_COMPOSE_USER_PROMPT:-}
+      LLM_LYRICS_SYSTEM_PROMPT: ${LLM_LYRICS_SYSTEM_PROMPT:-}
+      LLM_LYRICS_USER_PROMPT: ${LLM_LYRICS_USER_PROMPT:-}
+      LLM_RAG_SYSTEM_PROMPT: ${LLM_RAG_SYSTEM_PROMPT:-}
+      LLM_RAG_USER_PROMPT: ${LLM_RAG_USER_PROMPT:-}
+      LLM_RAG_KNOWLEDGE: ${LLM_RAG_KNOWLEDGE:-}
+>>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
       TZ: Asia/Shanghai
     depends_on:
       mysql:
@@ -103,7 +118,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 8
