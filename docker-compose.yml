@@ -65,11 +65,7 @@ services:
     restart: unless-stopped
     ports:
       - "6389:6379"
-    command:
-      - --maxmemory=256mb
-      - --maxmemory-policy=allkeys-lru
-      - --appendonly=yes
-      - --appendfsync=everysec
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes --appendfsync everysec
     volumes:
       - redis-data:/data
     healthcheck:
