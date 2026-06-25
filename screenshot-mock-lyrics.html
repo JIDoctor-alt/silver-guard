@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AI 作词功能开发 - TRAE 对话</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .app {
+    display: flex;
+    height: 100vh;
+    min-height: 720px;
+  }
+  /* 左侧边栏 */
+  .sidebar {
+    width: 240px;
+    background: #16162a;
+    border-right: 1px solid #2a2a4a;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid #2a2a4a;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: bold; font-size: 14px;
+  }
+  .sidebar-title { font-size: 15px; font-weight: 600; color: #fff; }
+  .new-chat-btn {
+    margin: 12px;
+    padding: 10px 14px;
+    background: #2d2d5a;
+    border: 1px solid #3d3d6a;
+    border-radius: 8px;
+    color: #a0a0c0;
+    cursor: pointer;
+    text-align: left;
+    font-size: 13px;
+  }
+  .new-chat-btn:hover { background: #35356a; }
+  .chat-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
+  .chat-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #a0a0c0;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chat-item:hover { background: #252545; }
+  .chat-item.active {
+    background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2));
+    color: #fff;
+  }
+  .chat-group-title {
+    padding: 12px 12px 6px;
+    font-size: 11px;
+    color: #6a6a8a;
+    font-weight: 500;
+  }
+  /* 主区域 */
+  .main { flex: 1; display: flex; flex-direction: column; }
+  .main-header {
+    height: 52px;
+    border-bottom: 1px solid #2a2a4a;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    justify-content: space-between;
+  }
+  .main-title { font-size: 14px; font-weight: 500; color: #fff; }
+  .header-actions { display: flex; gap: 12px; align-items: center; }
+  .model-badge {
+    font-size: 12px;
+    padding: 4px 10px;
+    background: rgba(99,102,241,0.15);
+    color: #818cf8;
+    border-radius: 12px;
+  }
+  .share-btn {
+    font-size: 12px;
+    padding: 4px 10px;
+    background: #2d2d5a;
+    border: 1px solid #3d3d6a;
+    border-radius: 6px;
+    color: #a0a0c0;
+    cursor: pointer;
+  }
+  /* 对话区域 */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 0;
+  }
+  .chat-container {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  .message {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .message.user { flex-direction: row-reverse; }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .avatar.user { background: linear-gradient(135deg, #06b6d4, #3b82f6); }
+  .avatar.ai { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+  .bubble {
+    max-width: 720px;
+    background: #252545;
+    border-radius: 12px;
+    padding: 14px 18px;
+    border: 1px solid #2a2a4a;
+  }
+  .message.user .bubble {
+    background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2));
+    border-color: rgba(99,102,241,0.3);
+  }
+  .bubble p { margin-bottom: 10px; color: #d0d0e8; }
+  .bubble p:last-child { margin-bottom: 0; }
+  .bubble strong { color: #fff; }
+  .bubble code {
+    background: #1a1a32;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 12.5px;
+    color: #f472b6;
+  }
+  .bubble ul { padding-left: 20px; margin-bottom: 10px; }
+  .bubble li { margin-bottom: 4px; color: #d0d0e8; }
+  /* 代码块 */
+  .code-block {
+    background: #0d0d1f;
+    border: 1px solid #2a2a4a;
+    border-radius: 8px;
+    margin: 10px 0;
+    overflow: hidden;
+  }
+  .code-header {
+    padding: 8px 14px;
+    background: #1a1a32;
+    border-bottom: 1px solid #2a2a4a;
+    font-size: 12px;
+    color: #8a8ab0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .code-lang { font-weight: 500; color: #a0a0c0; }
+  .copy-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: #2d2d5a;
+    border-radius: 4px;
+    color: #a0a0c0;
+    cursor: pointer;
+  }
+  .code-content {
+    padding: 14px 16px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: #d0d0e8;
+    overflow-x: auto;
+  }
+  .code-content .comment { color: #6a737d; }
+  .code-content .keyword { color: #c792ea; }
+  .code-content .string { color: #c3e88d; }
+  .code-content .func { color: #82aaff; }
+  .code-content .num { color: #f78c6c; }
+  /* 时间戳 */
+  .timestamp {
+    text-align: center;
+    font-size: 12px;
+    color: #5a5a7a;
+    margin-bottom: 20px;
+  }
+  /* 底部输入区 */
+  .input-area {
+    border-top: 1px solid #2a2a4a;
+    padding: 16px 24px 20px;
+    background: #16162a;
+  }
+  .input-box {
+    max-width: 880px;
+    margin: 0 auto;
+    background: #252545;
+    border: 1px solid #3d3d6a;
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .input-placeholder { color: #5a5a7a; font-size: 14px; }
+  .input-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    max-width: 880px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .input-tools { display: flex; gap: 8px; }
+  .tool-btn {
+    width: 28px; height: 28px;
+    background: #2d2d5a;
+    border: 1px solid #3d3d6a;
+    border-radius: 6px;
+    color: #8a8ab0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .send-btn {
+    width: 80px; height: 32px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .hint-text {
+    text-align: center;
+    font-size: 11px;
+    color: #5a5a7a;
+    margin-top: 8px;
+  }
+  /* 代码差异 */
+  .diff-add { color: #6ee7b7; background: rgba(16,185,129,0.1); }
+  .diff-del { color: #fca5a5; background: rgba(239,68,68,0.1); text-decoration: line-through; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 左侧边栏 -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">T</div>
+      <span class="sidebar-title">TRAE</span>
+    </div>
+    <button class="new-chat-btn">+ 新建对话</button>
+    <div class="chat-group-title">今天</div>
+    <div class="chat-list">
+      <div class="chat-item active">AI作词流式输出功能开发</div>
+      <div class="chat-item">知识库RAG问答对接</div>
+      <div class="chat-item">音乐模块页面设计</div>
+    </div>
+    <div class="chat-group-title">昨天</div>
+    <div class="chat-list">
+      <div class="chat-item">项目初始化与Docker部署</div>
+      <div class="chat-item">用户认证与权限系统</div>
+      <div class="chat-item">数据库表结构设计</div>
+    </div>
+    <div class="chat-group-title">更早</div>
+    <div class="chat-list">
+      <div class="chat-item">技术栈选型讨论</div>
+      <div class="chat-item">产品需求梳理</div>
+    </div>
+  </div>
+
+  <!-- 主区域 -->
+  <div class="main">
+    <div class="main-header">
+      <div class="main-title">AI作词流式输出功能开发</div>
+      <div class="header-actions">
+        <span class="model-badge">⚡ Claude 3.5 Sonnet</span>
+        <button class="share-btn">分享</button>
+      </div>
+    </div>
+
+    <div class="chat-area">
+      <div class="chat-container">
+        <div class="timestamp">6月19日 14:23</div>
+
+        <!-- 用户消息1 -->
+        <div class="message user">
+          <div class="avatar user">👤</div>
+          <div class="bubble">
+            <p>我想给音乐模块加一个 AI 作词功能，用户输入主题和风格，就能生成歌词。</p>
+            <p>要求：</p>
+            <ul>
+              <li>用 SSE 流式输出，用户能看到歌词逐字生成的过程</li>
+              <li>支持配置系统提示词和用户提示词模板，可以在页面上修改</li>
+              <li>歌词显示要好看，有光标闪烁动画</li>
+              <li>要对接现有的知识库，把诗词格律、押韵技巧这些知识注入到 prompt 里</li>
+            </ul>
+            <p>技术栈用我们现有的 Node.js + Express 后端，React + Ant Design 前端。</p>
+          </div>
+        </div>
+
+        <!-- AI 消息1 -->
+        <div class="message ai">
+          <div class="avatar ai">✨</div>
+          <div class="bubble">
+            <p>好的，我来帮你实现 AI 作词流式输出功能。整体方案如下：</p>
+            <p><strong>后端：</strong></p>
+            <ul>
+              <li>新增 <code>POST /api/music/lyrics/stream</code> SSE 端点</li>
+              <li>在 <code>aiService.js</code> 中实现 <code>composeLyricsStream()</code> 函数</li>
+              <li>流式调用 LLM，每收到一个 token 就通过 SSE 推送给前端</li>
+              <li>集成知识库 RAG，检索相关的诗词格律知识注入 prompt</li>
+            </ul>
+            <p><strong>前端：</strong></p>
+            <ul>
+              <li>在 <code>music.ts</code> 中封装 <code>generateLyricsStream()</code> API</li>
+              <li>使用 <code>ReadableStream</code> 读取流式数据并逐块更新 UI</li>
+              <li>添加光标闪烁动画，模拟打字效果</li>
+              <li>左侧面板增加系统提示词和用户提示词模板配置区</li>
+            </ul>
+            <p>我先从后端开始实现。</p>
+          </div>
+        </div>
+
+        <div class="timestamp">14:25</div>
+
+        <!-- AI 消息2 - 代码块 -->
+        <div class="message ai">
+          <div class="avatar ai">✨</div>
+          <div class="bubble">
+            <p>先实现后端的 SSE 流式接口：</p>
+            <div class="code-block">
+              <div class="code-header">
+                <span class="code-lang">server/src/routes/music.js</span>
+                <span class="copy-btn">复制</span>
+              </div>
+              <div class="code-content"><span class="comment">// AI 流式作词（SSE 逐 token 推送）</span>
+router.post(<span class="string">'/lyrics/stream'</span>, async (req, res) => {
+  <span class="keyword">try</span> {
+    <span class="keyword">const</span> { theme, genre } = req.body;
+
+    <span class="comment">// SSE 响应头</span>
+    res.writeHead(<span class="num">200</span>, {
+      <span class="string">'Content-Type'</span>: <span class="string">'text/event-stream'</span>,
+      <span class="string">'Cache-Control'</span>: <span class="string">'no-cache'</span>,
+      <span class="string">'Connection'</span>: <span class="string">'keep-alive'</span>,
+    });
+
+    <span class="keyword">const</span> onToken = (token) => {
+      res.write(<span class="string">`event: token\ndata: <span class="template">${JSON.stringify({ content: token })}</span>\n\n`</span>);
+    };
+
+    <span class="keyword">const</span> result = <span class="keyword">await</span> aiService.composeLyricsStream(
+      { theme, genre }, onToken
+    );
+
+    res.write(<span class="string">`event: done\ndata: <span class="template">${JSON.stringify(result)}</span>\n\n`</span>);
+    res.end();
+  } <span class="keyword">catch</span> (e) {
+    <span class="comment">// 错误处理...</span>
+  }
+});
+</div>
+            </div>
+            <p>接下来实现 <code>composeLyricsStream</code> 核心逻辑，集成知识库 RAG。</p>
+          </div>
+        </div>
+
+        <div class="timestamp">14:28</div>
+
+        <!-- 用户消息2 -->
+        <div class="message user">
+          <div class="avatar user">👤</div>
+          <div class="bubble">
+            <p>有个问题，LLM 返回的是 JSON 格式的话，流式输出的时候用户会看到 { "title": ... 这些原始 JSON 字符，体验很差。</p>
+            <p>能不能让流式输出的时候只显示歌词正文，不要 JSON 的那些括号引号？</p>
+          </div>
+        </div>
+
+        <!-- AI 消息3 -->
+        <div class="message ai">
+          <div class="avatar ai">✨</div>
+          <div class="bubble">
+            <p>你说得对！这是一个很好的观察。我来调整方案：</p>
+            <p><strong>优化方案：</strong></p>
+            <ul>
+              <li>系统提示词改成让 LLM 输出<strong>纯文本</strong>，不要 JSON</li>
+              <li>输出格式约定：第1行=标题，空行后是歌词正文，结尾加「【创作说明】」</li>
+              <li>每个 token 推送前先清洗掉 Markdown、代码块等格式符号</li>
+              <li>流式完成后，后端再从完整纯文本中解析出结构化字段（标题/歌词/描述）</li>
+              <li>前端也做一层解析，流式过程中智能识别标题、段落、创作说明</li>
+            </ul>
+            <p>这样用户看到的就是干净的歌词，像打字一样逐句出现，体验会好很多。我马上修改。</p>
+          </div>
+        </div>
+
+        <div class="timestamp">14:31</div>
+
+        <!-- AI 消息4 - 代码修改 -->
+        <div class="message ai">
+          <div class="avatar ai">✨</div>
+          <div class="bubble">
+            <p>已经修改好了。主要改动：</p>
+            <div class="code-block">
+              <div class="code-header">
+                <span class="code-lang">aiService.js - 新增清洗与解析函数</span>
+                <span class="copy-btn">复制</span>
+              </div>
+              <div class="code-content"><span class="comment">// 逐 token 清洗格式符号</span>
+<span class="keyword">function</span> <span class="func">cleanLyricToken</span>(token) {
+  <span class="keyword">return</span> token
+    .replace(<span class="regex">/```[\s\S]*\/g</span>, <span class="string">''</span>)  <span class="comment">// 代码块</span>
+    .replace(<span class="regex">/\*/g</span>, <span class="string">''</span>)       <span class="comment">// Markdown 列表/粗体</span>
+    .replace(<span class="regex">/#/g</span>, <span class="string">''</span>)        <span class="comment">// 标题标记</span>
+    .replace(<span class="regex">/\|/g</span>, <span class="string">''</span>)       <span class="comment">// 表格竖线</span>
+}
+
+<span class="comment">// 从纯文本解析结构化字段</span>
+<span class="keyword">function</span> <span class="func">parseLyricsFromText</span>(text, theme, genre) {
+  <span class="comment">// 提取标题（第1行）</span>
+  <span class="comment">// 提取歌词正文（空行分隔段落）</span>
+  <span class="comment">// 提取创作说明（【创作说明】标记后）</span>
+  <span class="keyword">return</span> { title, content, lineCount, description };
+}
+</div>
+            </div>
+            <p>同时前端也做了对应的智能解析，流式过程中就能分离标题和歌词，显示更优雅。</p>
+            <p>另外还加了几个 UI 细节：</p>
+            <ul>
+              <li>🎯 流式生成中最后一行有光标闪烁动画 <code>▊</code></li>
+              <li>📝 识别「【主歌】」「【副歌】」段落标题，用不同样式展示</li>
+              <li>📊 句数统计实时更新，生成完成后显示 AI 描述</li>
+            </ul>
+            <p>要不要我现在帮你启动项目测试一下效果？</p>
+          </div>
+        </div>
+
+        <div class="timestamp">14:35</div>
+
+        <!-- 用户消息3 -->
+        <div class="message user">
+          <div class="avatar user">👤</div>
+          <div class="bubble">
+            <p>好的，启动一下看看效果。另外歌词的排版格式要注意——每句单独一行，段落之间空行，不要有乱七八糟的符号。老年人用的，界面要清爽一点。</p>
+          </div>
+        </div>
+
+        <!-- AI 消息5 -->
+        <div class="message ai">
+          <div class="avatar ai">✨</div>
+          <div class="bubble">
+            <p>明白！老年人使用场景确实要特别注意可读性。我再优化一下显示层：</p>
+            <ul>
+              <li>字体放大到 <strong>18px</strong>，行高 <strong>2.2</strong>，看起来不累</li>
+              <li>歌词居中对齐，暖色渐变背景（浅橙→浅红），有温度感</li>
+              <li>段落之间用空白行分隔，清晰区分主歌/副歌</li>
+              <li>过滤掉所有可能的格式符号：编号、引号、Markdown 标记等</li>
+            </ul>
+            <p>Docker 正在重新构建，大约 1 分钟后就能看到效果。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部输入区 -->
+    <div class="input-area">
+      <div class="input-box">
+        <div class="input-placeholder">输入你的问题或需求，Shift + Enter 换行</div>
+      </div>
+      <div class="input-footer">
+        <div class="input-tools">
+          <div class="tool-btn">📎</div>
+          <div class="tool-btn">🌐</div>
+          <div class="tool-btn">🧠</div>
+          <div class="tool-btn">⚙️</div>
+        </div>
+        <button class="send-btn">发送 (Enter)</button>
+      </div>
+      <div class="hint-text">内容由 AI 生成，请注意甄别</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

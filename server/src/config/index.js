@@ -1,6 +1,7 @@
 // ============================================================
 // 乐龄守护 · 后端配置
 // 所有环境变量统一在此导出
+// 支持从数据库 system_config 表动态加载配置
 // ============================================================
 
 const config = {
@@ -27,32 +28,75 @@ const config = {
   // 时区
   TZ: process.env.TZ || 'Asia/Shanghai',
 
-<<<<<<< HEAD
-  // RAG / AI
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
-  OPENAI_BASE_URL: process.env.OPENAI_BASE_URL || '',
-  CHAT_MODEL: process.env.CHAT_MODEL || 'gpt-4o-mini',
-  EMBEDDING_MODEL: process.env.EMBEDDING_MODEL || 'text-embedding-3-small',
-=======
   // LLM（大模型 API，OpenAI 兼容格式）
   LLM_API_KEY: process.env.LLM_API_KEY || '',
-  LLM_API_URL: process.env.LLM_API_URL || 'https://api.openai.com/v1',
-  LLM_MODEL: process.env.LLM_MODEL || 'gpt-4o-mini',
+  LLM_API_URL: process.env.LLM_API_URL || 'https://api.deepseek.com',
+  LLM_MODEL: process.env.LLM_MODEL || 'deepseek-v4-pro',
 
-  // LLM 作曲 · 系统提示词（可自定义，不配置则使用内置默认）
+  // LLM 作曲 · 系统提示词（可自定义）
   LLM_COMPOSE_SYSTEM_PROMPT: process.env.LLM_COMPOSE_SYSTEM_PROMPT || '',
   LLM_COMPOSE_USER_PROMPT: process.env.LLM_COMPOSE_USER_PROMPT || '',
 
-  // LLM 作词 · 系统提示词（可自定义，不配置则使用内置默认）
+  // LLM 作词 · 系统提示词（可自定义）
   LLM_LYRICS_SYSTEM_PROMPT: process.env.LLM_LYRICS_SYSTEM_PROMPT || '',
   LLM_LYRICS_USER_PROMPT: process.env.LLM_LYRICS_USER_PROMPT || '',
 
-  // LLM 知识库问答 · 系统提示词（可自定义，不配置则使用内置默认）
+  // LLM 知识库问答 · 系统提示词（可自定义）
   LLM_RAG_SYSTEM_PROMPT: process.env.LLM_RAG_SYSTEM_PROMPT || '',
   LLM_RAG_USER_PROMPT: process.env.LLM_RAG_USER_PROMPT || '',
-  // 自定义知识库（JSON 数组字符串，不配置则使用内置默认）
+  // 自定义知识库（JSON 数组字符串）
   LLM_RAG_KNOWLEDGE: process.env.LLM_RAG_KNOWLEDGE || '',
->>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
+
+  // 高德地图 API
+  AMAP_API_KEY: process.env.AMAP_API_KEY || '',
+  AMAP_SECURITY_KEY: process.env.AMAP_SECURITY_KEY || '',
+
+  // ==================== 从数据库加载配置 ====================
+  // 在 DB 连接就绪后调用，从 system_config 表覆盖 LLM 和高德配置
+  // 数据库配置优先级高于环境变量
+  _dbLoaded: false,
+
+  async loadFromDb() {
+    if (this._dbLoaded) return;
+    try {
+      const pool = require('../db/mysql');
+      const [rows] = await pool.query(
+        'SELECT config_key, config_value FROM system_config WHERE deleted = 0 AND is_editable = 1'
+      );
+      const dbConfig = {};
+      for (const row of rows) {
+        dbConfig[row.config_key] = row.config_value;
+      }
+
+      // 覆盖 LLM 配置（数据库有值则使用，否则保留环境变量）
+      if (dbConfig.LLM_API_KEY) this.LLM_API_KEY = dbConfig.LLM_API_KEY;
+      if (dbConfig.LLM_API_URL) this.LLM_API_URL = dbConfig.LLM_API_URL;
+      if (dbConfig.LLM_MODEL) this.LLM_MODEL = dbConfig.LLM_MODEL;
+
+      if (dbConfig.LLM_COMPOSE_SYSTEM_PROMPT) this.LLM_COMPOSE_SYSTEM_PROMPT = dbConfig.LLM_COMPOSE_SYSTEM_PROMPT;
+      if (dbConfig.LLM_COMPOSE_USER_PROMPT) this.LLM_COMPOSE_USER_PROMPT = dbConfig.LLM_COMPOSE_USER_PROMPT;
+
+      if (dbConfig.LLM_LYRICS_SYSTEM_PROMPT) this.LLM_LYRICS_SYSTEM_PROMPT = dbConfig.LLM_LYRICS_SYSTEM_PROMPT;
+      if (dbConfig.LLM_LYRICS_USER_PROMPT) this.LLM_LYRICS_USER_PROMPT = dbConfig.LLM_LYRICS_USER_PROMPT;
+
+      if (dbConfig.LLM_RAG_SYSTEM_PROMPT) this.LLM_RAG_SYSTEM_PROMPT = dbConfig.LLM_RAG_SYSTEM_PROMPT;
+      if (dbConfig.LLM_RAG_USER_PROMPT) this.LLM_RAG_USER_PROMPT = dbConfig.LLM_RAG_USER_PROMPT;
+
+      if (dbConfig.AMAP_API_KEY) this.AMAP_API_KEY = dbConfig.AMAP_API_KEY;
+      if (dbConfig.AMAP_SECURITY_KEY) this.AMAP_SECURITY_KEY = dbConfig.AMAP_SECURITY_KEY;
+
+      this._dbLoaded = true;
+      console.log('[config] 已从数据库加载系统配置');
+    } catch (err) {
+      console.warn('[config] 加载数据库配置失败，使用环境变量默认值:', err.message);
+    }
+  },
+
+  // 重新加载配置（配置更新后调用）
+  async reloadFromDb() {
+    this._dbLoaded = false;
+    await this.loadFromDb();
+  },
 };
 
 module.exports = config;

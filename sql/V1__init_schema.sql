@@ -7,6 +7,8 @@
 --       禁止手工修改表结构，所有变更走 Flyway 版本化脚本
 -- =========================================================
 
+SET NAMES utf8mb4;
+
 -- ---------------------------- 库创建 ----------------------------
 CREATE DATABASE IF NOT EXISTS silver_guard
     DEFAULT CHARACTER SET utf8mb4

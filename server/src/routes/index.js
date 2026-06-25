@@ -8,14 +8,15 @@ const elderRouter = require('./elder');
 const eventRouter = require('./event');
 const deviceRouter = require('./device');
 const patrolRouter = require('./patrol');
-<<<<<<< HEAD
-const musicRouter = require('./music');
-const chatRouter = require('./chat');
-=======
 const sseRouter = require('./sse');
 const ragRouter = require('./rag');
 const musicRouter = require('./music');
->>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
+const squareRouter = require('./square');
+const healthRouter = require('./health');
+const knowledgeRouter = require('./knowledge');
+const readingRouter = require('./reading');
+const systemConfigRouter = require('./systemConfig');
+const amapRouter = require('./amap');
 
 const router = express.Router();
 
@@ -37,14 +38,6 @@ router.use('/device', deviceRouter);
 // 巡检记录
 router.use('/patrol', patrolRouter);
 
-<<<<<<< HEAD
-// 音乐创作（作曲/作词）
-router.use('/music', musicRouter);
-
-// RAG 智能问答（含 SSE 流式响应）
-router.use('/chat', chatRouter);
-
-=======
 // SSE 实时推送
 router.use('/sse', sseRouter);
 
@@ -54,5 +47,22 @@ router.use('/rag', ragRouter);
 // AI 音乐陪伴
 router.use('/music', musicRouter);
 
->>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
+// 银龄广场
+router.use('/square', squareRouter);
+
+// 高德地图
+router.use('/amap', amapRouter);
+
+// 健康记录
+router.use('/health', healthRouter);
+
+// 知识库（体质/节气/反诈/政策）
+router.use('/knowledge', knowledgeRouter);
+
+// 经典阅读
+router.use('/reading', readingRouter);
+
+// 系统配置（大模型配置/提示词配置）
+router.use('/system-config', systemConfigRouter);
+
 module.exports = router;

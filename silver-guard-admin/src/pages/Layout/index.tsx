@@ -9,13 +9,16 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
-<<<<<<< HEAD
-  CustomerServiceOutlined,
-  MessageOutlined,
-=======
   RobotOutlined,
   CustomerServiceOutlined,
->>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
+  TrophyOutlined,
+  EnvironmentOutlined,
+  HeartOutlined,
+  ExperimentOutlined,
+  SafetyCertificateOutlined,
+  ClusterOutlined,
+  ReadOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import { useAuthStore, useAppStore } from '../../stores';
 import './Layout.css';
@@ -28,14 +31,19 @@ const menuItems = [
   { key: '/event', icon: <AlertOutlined />, label: '预警事件' },
   { key: '/device', icon: <HddOutlined />, label: '设备管理' },
   { key: '/patrol', icon: <CheckCircleOutlined />, label: '巡检记录' },
-<<<<<<< HEAD
-  { key: '/music', icon: <CustomerServiceOutlined />, label: '音乐创作' },
-  { key: '/chat', icon: <MessageOutlined />, label: '智能问答' },
-=======
   { type: 'divider' as const },
+  { key: '/health', icon: <HeartOutlined />, label: '健康档案' },
+  { key: '/constitution', icon: <ExperimentOutlined />, label: '中医体质' },
   { key: '/ai-chat', icon: <RobotOutlined />, label: '智能问答' },
   { key: '/music', icon: <CustomerServiceOutlined />, label: '音乐陪伴' },
->>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
+  { key: '/square', icon: <TrophyOutlined />, label: '银龄广场' },
+  { type: 'divider' as const },
+  { key: '/reading', icon: <ReadOutlined />, label: '经典阅读' },
+  { key: '/knowledge-base', icon: <SafetyCertificateOutlined />, label: '知识库' },
+  { key: '/architecture', icon: <ClusterOutlined />, label: '端边云架构' },
+  { key: '/amap', icon: <EnvironmentOutlined />, label: '高德地图' },
+  { type: 'divider' as const },
+  { key: '/system-config', icon: <SettingOutlined />, label: '大模型配置' },
 ];
 
 export default function LayoutPage() {

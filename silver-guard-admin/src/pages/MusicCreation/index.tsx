@@ -17,18 +17,21 @@ import {
   CustomerServiceOutlined,
   BulbOutlined,
   ClockCircleOutlined,
-  HeartOutlined
+  HeartOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import {
   getThemes,
   getStyles,
   generateLyrics,
+  generateLyricsStream,
   generateMusic,
   getMusicStatus,
   getMyWorks,
   saveWork,
   deleteWork,
 } from '../../api/music';
+import { getConfigList, updateConfig } from '../../api/systemConfig';
 import type { Theme, MusicStyle, Lyrics } from '../../api/music';
 
 const { Title, Text, Paragraph } = Typography;
@@ -47,6 +50,13 @@ export default function MusicCreation() {
   const [currentLyrics, setCurrentLyrics] = useState<Lyrics | null>(null);
   const [customTitle, setCustomTitle] = useState('');
   const [activeTab, setActiveTab] = useState('create');
+  const [streamingText, setStreamingText] = useState('');
+  const [streaming, setStreaming] = useState(false);
+
+  // 提示词配置
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [userPrompt, setUserPrompt] = useState('');
+  const [promptSaving, setPromptSaving] = useState(false);
 
   // 加载主题和风格列表
   useEffect(() => {
@@ -54,6 +64,13 @@ export default function MusicCreation() {
     loadStyles();
     loadWorks();
   }, []);
+
+  // 切换到提示词配置 Tab 时加载
+  useEffect(() => {
+    if (activeTab === 'prompt') {
+      loadPrompts();
+    }
+  }, [activeTab]);
 
   const loadThemes = async () => {
     try {
@@ -88,7 +105,123 @@ export default function MusicCreation() {
     }
   };
 
-  // 生成歌词
+  // 生成歌词（流式 SSE）
+  const handleGenerateLyricsStream = async () => {
+    setStreamingText('');
+    setStreaming(true);
+    setCurrentLyrics(null);
+
+    try {
+      const response = await generateLyricsStream({
+        theme: selectedTheme,
+        style: selectedStyle,
+      });
+
+      if (!response.ok) {
+        throw new Error('请求失败');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('不支持流式读取');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          if (trimmed.startsWith('event: token')) {
+            // 下一行是 data
+            continue;
+          }
+          if (trimmed.startsWith('event: done')) {
+            continue;
+          }
+          if (trimmed.startsWith('event: error')) {
+            continue;
+          }
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(trimmed.slice(6));
+              if (data.content) {
+                fullText += data.content;
+                setStreamingText(fullText);
+              }
+              // done 事件包含完整结果
+              if (data.title || data.content || data.theme) {
+                setCurrentLyrics({
+                  id: data.id || '',
+                  title: data.title || '',
+                  description: data.description || '',
+                  theme: data.theme || selectedTheme,
+                  style: data.genre || data.style || selectedStyle,
+                  bpm: data.bpm || 100,
+                  mood: data.mood || '愉快',
+                  tags: data.tags || [],
+                  lyrics: data.content || fullText,
+                  createdAt: new Date().toISOString(),
+                });
+                setCustomTitle(data.title || '');
+              }
+            } catch {
+              // 非 JSON 行，跳过
+            }
+          }
+        }
+      }
+      message.success('歌词生成完成！');
+    } catch (e: any) {
+      message.error('流式生成失败，尝试普通模式...');
+      // 降级为普通模式
+      handleGenerateLyrics();
+    } finally {
+      setStreaming(false);
+    }
+  };
+
+  // 加载提示词配置
+  const loadPrompts = async () => {
+    try {
+      const res = await getConfigList();
+      if (res.code === 200) {
+        const configs = res.data as any[];
+        const system = configs.find((c: any) => c.configKey === 'LLM_LYRICS_SYSTEM_PROMPT');
+        const user = configs.find((c: any) => c.configKey === 'LLM_LYRICS_USER_PROMPT');
+        if (system) setSystemPrompt(system.configValue || '');
+        if (user) setUserPrompt(user.configValue || '');
+      }
+    } catch {
+      // 静默失败
+    }
+  };
+
+  // 保存提示词配置
+  const handleSavePrompts = async () => {
+    setPromptSaving(true);
+    try {
+      await Promise.all([
+        updateConfig('LLM_LYRICS_SYSTEM_PROMPT', systemPrompt),
+        updateConfig('LLM_LYRICS_USER_PROMPT', userPrompt),
+      ]);
+      message.success('提示词配置已保存，下次作词生效');
+    } catch {
+      message.error('保存失败');
+    } finally {
+      setPromptSaving(false);
+    }
+  };
+
+  // 生成歌词（普通模式，兜底）
   const handleGenerateLyrics = async () => {
     setLoading(true);
     try {
@@ -251,8 +384,8 @@ export default function MusicCreation() {
                     type="primary"
                     icon={<BulbOutlined />}
                     size="large"
-                    loading={loading}
-                    onClick={handleGenerateLyrics}
+                    loading={streaming || loading}
+                    onClick={handleGenerateLyricsStream}
                     block
                   >
                     ✨ 生成歌词
@@ -295,10 +428,26 @@ export default function MusicCreation() {
                   )
                 }
               >
-                {loading ? (
+                {loading || streaming ? (
                   <div style={{ textAlign: 'center', padding: 60 }}>
                     <Spin size="large" />
-                    <Paragraph style={{ marginTop: 16 }}>AI 正在创作歌词...</Paragraph>
+                    <Paragraph style={{ marginTop: 16 }}>
+                      {streaming ? 'AI 正在逐字创作歌词...' : 'AI 正在创作歌词...'}
+                    </Paragraph>
+                    {streaming && streamingText && (
+                      <TextArea
+                        value={streamingText}
+                        rows={12}
+                        readOnly
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: 16,
+                          lineHeight: 1.8,
+                          background: '#fafafa',
+                          marginTop: 16,
+                        }}
+                      />
+                    )}
                   </div>
                 ) : currentLyrics ? (
                   <div>
@@ -483,6 +632,73 @@ export default function MusicCreation() {
               </Card>
             </Col>
           </Row>
+        </TabPane>
+
+        <TabPane tab={<span><SettingOutlined /> 提示词配置</span>} key="prompt">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={12}>
+              <Card
+                title="系统提示词"
+                extra={
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<SaveOutlined />}
+                    loading={promptSaving}
+                    onClick={handleSavePrompts}
+                  >
+                    保存
+                  </Button>
+                }
+              >
+                <Text type="secondary" style={{ marginBottom: 8, display: 'block' }}>
+                  给 LLM 的前置指令，定义 AI 的角色和创作风格
+                </Text>
+                <TextArea
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  rows={12}
+                  style={{ fontFamily: 'monospace', fontSize: 13 }}
+                  placeholder="加载中..."
+                />
+              </Card>
+            </Col>
+            <Col xs={24} lg={12}>
+              <Card
+                title="用户提示词模板"
+                extra={
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<SaveOutlined />}
+                    loading={promptSaving}
+                    onClick={handleSavePrompts}
+                  >
+                    保存
+                  </Button>
+                }
+              >
+                <Text type="secondary" style={{ marginBottom: 8, display: 'block' }}>
+                  用户提示词模板，支持 {'{theme}'} {'{genre}'} {'{knowledgeContext}'} 占位符
+                </Text>
+                <TextArea
+                  value={userPrompt}
+                  onChange={(e) => setUserPrompt(e.target.value)}
+                  rows={12}
+                  style={{ fontFamily: 'monospace', fontSize: 13 }}
+                  placeholder="加载中..."
+                />
+              </Card>
+            </Col>
+          </Row>
+          <Card style={{ marginTop: 16 }}>
+            <Title level={5}>可用占位符说明</Title>
+            <Space direction="vertical">
+              <Text><Tag>{'{theme}'}</Tag> — 用户选择的主题（如"健康养生"、"岁月情怀"）</Text>
+              <Text><Tag>{'{genre}'}</Tag> — 用户选择的体裁（如"民歌"、"流行"）</Text>
+              <Text><Tag>{'{knowledgeContext}'}</Tag> — 从文学经典知识库检索到的诗词格律、押韵技法等参考内容</Text>
+            </Space>
+          </Card>
         </TabPane>
       </Tabs>
     </div>

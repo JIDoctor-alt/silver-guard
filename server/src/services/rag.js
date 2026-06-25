@@ -17,10 +17,18 @@ const redisClient = require('../db/redis');
 
 const config = require('../config');
 
-const openai = new OpenAI({
-  apiKey: config.OPENAI_API_KEY,
-  baseURL: config.OPENAI_BASE_URL || 'https://api.openai.com/v1',
-});
+// 延迟初始化 OpenAI 客户端，避免无 API Key 时模块加载崩溃
+let openai = null;
+
+function getOpenAI() {
+  if (!openai && config.LLM_API_KEY) {
+    openai = new OpenAI({
+      apiKey: config.LLM_API_KEY,
+      baseURL: config.LLM_API_URL || 'https://api.openai.com/v1',
+    });
+  }
+  return openai;
+}
 
 let vectorStore = null;
 let retrievalChain = null;
@@ -120,15 +128,15 @@ const DEFAULT_KNOWLEDGE_BASE = [
 
 async function initVectorStore() {
   try {
-    if (!config.OPENAI_API_KEY) {
-      console.warn('[RAG] 未配置 OPENAI_API_KEY，使用模拟模式');
+    if (!config.LLM_API_KEY) {
+      console.warn('[RAG] 未配置 LLM_API_KEY，使用模拟模式');
       return;
     }
 
     const embeddings = new OpenAIEmbeddings({
-      openAIApiKey: config.OPENAI_API_KEY,
-      baseURL: config.OPENAI_BASE_URL,
-      model: config.EMBEDDING_MODEL || 'text-embedding-3-small',
+      openAIApiKey: config.LLM_API_KEY,
+      baseURL: config.LLM_API_URL,
+      model: 'text-embedding-3-small',
     });
 
     const redisUrl = `redis://${config.REDIS_HOST || 'localhost'}:${config.REDIS_PORT || 6379}`;
@@ -145,7 +153,7 @@ async function initVectorStore() {
 }
 
 async function loadKnowledgeBase() {
-  if (!config.OPENAI_API_KEY || !vectorStore) return;
+  if (!config.LLM_API_KEY || !vectorStore) return;
 
   try {
     const docs = DEFAULT_KNOWLEDGE_BASE.map((item, index) => {
@@ -167,13 +175,13 @@ async function loadKnowledgeBase() {
 }
 
 async function buildRetrievalChain() {
-  if (!config.OPENAI_API_KEY) return;
+  if (!config.LLM_API_KEY) return;
 
   try {
     const llm = new ChatOpenAI({
-      openAIApiKey: config.OPENAI_API_KEY,
-      baseURL: config.OPENAI_BASE_URL,
-      model: config.CHAT_MODEL || 'gpt-4o-mini',
+      openAIApiKey: config.LLM_API_KEY,
+      baseURL: config.LLM_API_URL,
+      model: config.LLM_MODEL || 'gpt-4o-mini',
       temperature: 0.3,
     });
 
@@ -249,7 +257,8 @@ function getMockResponse(query) {
 }
 
 async function streamChat(query, onChunk) {
-  if (!config.OPENAI_API_KEY) {
+  const client = getOpenAI();
+  if (!client) {
     const mockResponse = getMockResponse(query);
     const chunks = mockResponse.answer.split('');
     for (const char of chunks) {
@@ -266,8 +275,8 @@ async function streamChat(query, onChunk) {
   try {
     const ragResult = await queryRAG(query);
 
-    const stream = await openai.chat.completions.create({
-      model: config.CHAT_MODEL || 'gpt-4o-mini',
+    const stream = await client.chat.completions.create({
+      model: config.LLM_MODEL || 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -358,8 +367,8 @@ async function searchDocuments(query, limit = 5) {
 }
 
 async function init() {
-  if (!config.OPENAI_API_KEY) {
-    console.warn('[RAG] OPENAI_API_KEY 未配置，将使用模拟模式');
+  if (!config.LLM_API_KEY) {
+    console.warn('[RAG] LLM_API_KEY 未配置，将使用模拟模式');
     return;
   }
 

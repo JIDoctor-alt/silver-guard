@@ -13,7 +13,7 @@ WORKDIR /app
 # 复制 package 并安装依赖（优先利用缓存）
 COPY silver-guard-admin/package.json ./
 COPY silver-guard-admin/package-lock.json* ./
-RUN npm ci --silent || npm install --silent
+RUN rm -f package-lock.json && npm install --silent
 
 # 复制源码
 COPY silver-guard-admin/ ./

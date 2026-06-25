@@ -8,6 +8,7 @@ const poolOptions = {
   user: config.MYSQL_USER,
   password: config.MYSQL_PASSWORD,
   database: config.MYSQL_DATABASE,
+  charset: 'utf8mb4',
   waitForConnections: true,
   connectionLimit: config.MYSQL_CONNECTION_LIMIT,
   queueLimit: 0,

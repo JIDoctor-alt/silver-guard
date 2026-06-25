@@ -34,6 +34,9 @@ async function bootstrap() {
   await waitForMySQL();
   await initData();
 
+  // 从数据库加载系统配置（LLM 连接、提示词等）
+  await config.loadFromDb();
+
   // Redis 连接（非阻塞）
   try {
     await redisClient.connect();

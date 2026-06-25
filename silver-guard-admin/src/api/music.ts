@@ -67,42 +67,42 @@ export interface GenerateParams {
  * 获取所有可用主题
  */
 export const getThemes = () => {
-  return axios.get<{ code: number; data: Theme[] }>('/api/music/themes');
+  return axios.get<{ code: number; data: Theme[] }>('/music/themes');
 };
 
 /**
  * 获取所有音乐风格
  */
 export const getStyles = () => {
-  return axios.get<{ code: number; data: MusicStyle[] }>('/api/music/styles');
+  return axios.get<{ code: number; data: MusicStyle[] }>('/music/styles');
 };
 
 /**
  * 生成歌词
  */
 export const generateLyrics = (params: GenerateParams) => {
-  return axios.post<{ code: number; data: Lyrics }>('/api/music/lyrics', params);
+  return axios.post<{ code: number; data: Lyrics }>('/music/lyrics', params);
 };
 
 /**
  * 生成音乐
  */
 export const generateMusic = (params: { lyrics: string; theme: string; style?: string; title?: string }) => {
-  return axios.post<{ code: number; data: any }>('/api/music/generate', params);
+  return axios.post<{ code: number; data: any }>('/music/generate', params);
 };
 
 /**
  * 查询音乐生成状态
  */
 export const getMusicStatus = (id: string) => {
-  return axios.get<{ code: number; data: any }>(`/api/music/status/${id}`);
+  return axios.get<{ code: number; data: any }>(`/music/status/${id}`);
 };
 
 /**
  * 获取我的作品列表
  */
 export const getMyWorks = () => {
-  return axios.get<{ code: number; data: MusicWork[] }>('/api/music/my-works');
+  return axios.get<{ code: number; data: MusicWork[] }>('/music/my-works');
 };
 
 /**
@@ -116,12 +116,28 @@ export const saveWork = (params: {
   audioUrl?: string;
   coverUrl?: string;
 }) => {
-  return axios.post<{ code: number; data: any }>('/api/music/save', params);
+  return axios.post<{ code: number; data: any }>('/music/save', params);
 };
 
 /**
  * 删除作品
  */
 export const deleteWork = (id: string) => {
-  return axios.delete<{ code: number; message: string }>(`/api/music/${id}`);
+  return axios.delete<{ code: number; message: string }>(`/music/${id}`);
+};
+
+/**
+ * 流式生成歌词（SSE）
+ * 直接返回 fetch Response，供上层使用 ReadableStream 读取
+ */
+export const generateLyricsStream = (params: { theme: string; style?: string }) => {
+  const token = localStorage.getItem('token');
+  return fetch('/api/music/lyrics/stream', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ theme: params.theme, genre: params.style }),
+  });
 };

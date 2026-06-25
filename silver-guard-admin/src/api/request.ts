@@ -38,7 +38,8 @@ instance.interceptors.request.use(
 instance.interceptors.response.use(
   (response: AxiosResponse<ApiResult<unknown>>) => {
     const { data } = response;
-    if (data.code === 200) {
+    // code 0（音乐/RAG等接口）或 code 200（通用接口）均为成功
+    if (data.code === 0 || data.code === 200) {
       return response;
     }
     // 业务错误
