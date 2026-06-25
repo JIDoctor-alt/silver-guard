@@ -34,7 +34,7 @@ router.post('/chat', async (req, res) => {
 
 /**
  * POST /api/rag/chat/stream
- * SSE 流式问答：逐字推送 AI 回答
+ * SSE 流式问答：逐 token 推送 AI 回答（真正的 LLM 流式）
  * Body: { question, elderName?, elderId? }
  */
 router.post('/chat/stream', async (req, res) => {
@@ -49,34 +49,25 @@ router.post('/chat/stream', async (req, res) => {
     if (elderName) context.elderName = elderName;
     if (elderId) context.elderId = elderId;
 
-    const result = await ragService.generateAnswer(question.trim(), context);
+    // SSE 响应头
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
 
-  // SSE 流式响应
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no',
-  });
+    // 每收到一个 token 就推送给前端
+    const onToken = (token) => {
+      res.write(`event: token\ndata: ${JSON.stringify({ content: token })}\n\n`);
+    };
 
-  // 逐字推送（模拟流式输出）
-  const answer = result.answer;
-  let index = 0;
+    const result = await ragService.generateAnswerStream(question.trim(), context, onToken);
 
-  const streamInterval = setInterval(() => {
-    if (index < answer.length) {
-      // 按字符组推送，模拟流畅感
-      const chunk = answer.slice(index, index + 3);
-      res.write(`event: token\ndata: ${JSON.stringify({ content: chunk })}\n\n`);
-      index += 3;
-    } else {
-      // 推送完毕，发送来源信息
-      res.write(`event: sources\ndata: ${JSON.stringify({ sources: result.sources })}\n\n`);
-      res.write(`event: done\ndata: ${JSON.stringify({ message: '回答完成' })}\n\n`);
-      clearInterval(streamInterval);
-      res.end();
-    }
-  }, 50);
+    // 推送来源信息
+    res.write(`event: sources\ndata: ${JSON.stringify({ sources: result.sources })}\n\n`);
+    res.write(`event: done\ndata: ${JSON.stringify({ message: '回答完成', generatedBy: result.generatedBy })}\n\n`);
+    res.end();
   } catch (e) {
     console.error('RAG 流式问答失败:', e.message);
     res.writeHead(500, { 'Content-Type': 'text/event-stream' });
@@ -126,6 +117,73 @@ router.get('/knowledge', (req, res) => {
       total: ragService.KNOWLEDGE_BASE.length,
     },
   });
+});
+
+/**
+ * POST /api/rag/knowledge/add
+ * 添加一条知识条目（支持从文件或文本添加）
+ * Body: { title, content, category?, keywords?, source? }
+ */
+router.post('/knowledge/add', (req, res) => {
+  try {
+    const { title, content, category, keywords, source } = req.body;
+    if (!title || !content || !String(content).trim()) {
+      return res.status(400).json({ code: 400, message: '标题和内容不能为空', data: null });
+    }
+    const newItem = ragService.addKnowledgeItem({
+      title: String(title).trim(),
+      content: String(content).trim(),
+      category,
+      keywords: Array.isArray(keywords) ? keywords : (keywords ? String(keywords).split(/[,,，\s]+/).filter(Boolean) : []),
+      source,
+    });
+    res.json({
+      code: 0,
+      message: '添加成功',
+      data: { item: newItem, totalKnowledge: ragService.KNOWLEDGE_BASE.length },
+    });
+  } catch (e) {
+    console.error('添加知识条目失败:', e.message);
+    res.status(500).json({ code: 500, message: e.message || '添加失败', data: null });
+  }
+});
+
+/**
+ * GET /api/rag/knowledge/user-items
+ * 获取所有用户添加的知识条目
+ */
+router.get('/knowledge/user-items', (req, res) => {
+  const items = ragService.getUserKnowledgeItems();
+  res.json({
+    code: 0,
+    message: '获取成功',
+    data: { items, total: items.length },
+  });
+});
+
+/**
+ * DELETE /api/rag/knowledge/:id
+ * 删除用户添加的知识条目
+ */
+router.delete('/knowledge/:id', (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ code: 400, message: '无效的ID', data: null });
+    }
+    const ok = ragService.deleteKnowledgeItem(id);
+    if (!ok) {
+      return res.status(404).json({ code: 404, message: '未找到该条目', data: null });
+    }
+    res.json({
+      code: 0,
+      message: '删除成功',
+      data: { totalKnowledge: ragService.KNOWLEDGE_BASE.length },
+    });
+  } catch (e) {
+    console.error('删除知识条目失败:', e.message);
+    res.status(500).json({ code: 500, message: '删除失败', data: null });
+  }
 });
 
 module.exports = router;

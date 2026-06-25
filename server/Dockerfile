@@ -12,10 +12,12 @@ RUN npm install --omit=dev --silent
 
 COPY server/ ./
 
-# 非 root 用户运行（安全最佳实践）
-RUN addgroup -S silver && adduser -S silver -G silver
-USER silver
+# 创建数据目录（持久化用户知识库）
+RUN mkdir -p /app/data && chown -R node:node /app/data
 
 EXPOSE 8080
+
+# 使用内置的 node 用户（uid 1000），确保能写入挂载的 data 目录
+USER node
 
 CMD ["node", "src/server.js"]

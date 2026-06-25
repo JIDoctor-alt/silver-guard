@@ -35,13 +35,14 @@ services:
       - "3316:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root1234}
-      MYSQL_DATABASE: leling-guardian
+      MYSQL_DATABASE: silver_guard
       MYSQL_USER: leling-guardian_app
       MYSQL_PASSWORD: ${DB_APP_PASSWORD:-app1234}
       TZ: Asia/Shanghai
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+      - --init-connect=SET NAMES utf8mb4
       - --default-time-zone=+08:00
       - --innodb-buffer-pool-size=128M
       - --innodb-log-file-size=48M
@@ -85,23 +86,25 @@ services:
     restart: unless-stopped
     ports:
       - "8090:8080"
+    volumes:
+      - ./server/data:/app/data
+    dns:
+      - 8.8.8.8
+      - 114.114.114.114
     environment:
       PORT: 8080
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_USER: leling-guardian_app
       MYSQL_PASSWORD: ${DB_APP_PASSWORD:-app1234}
-      MYSQL_DATABASE: leling-guardian
+      MYSQL_DATABASE: silver_guard
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-<<<<<<< HEAD
-      JWT_SECRET: ${JWT_SECRET:-leling-guardian-dev-secret-change-in-prod}
-=======
       JWT_SECRET: ${JWT_SECRET:-silver-guard-dev-secret-change-in-prod}
       LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_API_URL: ${LLM_API_URL:-https://api.openai.com/v1}
-      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_API_URL: ${LLM_API_URL:-https://api.deepseek.com}
+      LLM_MODEL: ${LLM_MODEL:-deepseek-v4-pro}
       # 系统提示词（可选，不配置则使用内置默认）
       LLM_COMPOSE_SYSTEM_PROMPT: ${LLM_COMPOSE_SYSTEM_PROMPT:-}
       LLM_COMPOSE_USER_PROMPT: ${LLM_COMPOSE_USER_PROMPT:-}
@@ -110,7 +113,9 @@ services:
       LLM_RAG_SYSTEM_PROMPT: ${LLM_RAG_SYSTEM_PROMPT:-}
       LLM_RAG_USER_PROMPT: ${LLM_RAG_USER_PROMPT:-}
       LLM_RAG_KNOWLEDGE: ${LLM_RAG_KNOWLEDGE:-}
->>>>>>> 8a79316 (feat: SSE/RAG/音乐智能体 + 提示词配置系统)
+      # 高德地图 API
+      AMAP_API_KEY: ${AMAP_API_KEY:-b904b6236a84162f7704022928ace623}
+      AMAP_SECURITY_KEY: ${AMAP_SECURITY_KEY:-70e101ff974b174d019d6d598df3bf5f}
       TZ: Asia/Shanghai
     depends_on:
       mysql:
@@ -130,7 +135,7 @@ services:
   admin:
     build:
       context: .
-      dockerfile: leling-guardian-admin/Dockerfile
+      dockerfile: silver-guard-admin/Dockerfile
     container_name: leling-guardian-admin
     restart: unless-stopped
     ports:

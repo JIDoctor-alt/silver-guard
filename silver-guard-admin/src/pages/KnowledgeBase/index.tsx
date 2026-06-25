@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Card,
   Tag,
@@ -17,7 +17,8 @@ import {
   Button,
   Form,
   Input,
-  Checkbox,
+  Upload,
+  Popconfirm,
 } from 'antd';
 import {
   SafetyCertificateOutlined,
@@ -27,6 +28,10 @@ import {
   ReadOutlined,
   BookOutlined,
   PlusOutlined,
+  CloudUploadOutlined,
+  FileTextOutlined,
+  InboxOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import {
   getAntiFraudKnowledge,
@@ -36,7 +41,13 @@ import {
   type AntiFraudKnowledge,
   type PolicyKnowledge,
 } from '../../api/knowledge';
-import { ragKnowledge, type RAGKnowledgeItem } from '../../api/ai';
+import {
+  ragKnowledge,
+  ragAddKnowledge,
+  ragUserKnowledge,
+  ragDeleteKnowledge,
+  type RAGKnowledgeItem,
+} from '../../api/ai';
 
 const { Paragraph, Text } = Typography;
 
@@ -97,6 +108,15 @@ export default function KnowledgeBasePage() {
   const [literaryFilter, setLiteraryFilter] = useState('ALL');
   const [selectedLiterary, setSelectedLiterary] = useState<RAGKnowledgeItem | null>(null);
   const [literaryModalOpen, setLiteraryModalOpen] = useState(false);
+
+  // RAG 自定义知识库相关
+  const [userKnowledgeList, setUserKnowledgeList] = useState<RAGKnowledgeItem[]>([]);
+  const [userKnowledgeLoading, setUserKnowledgeLoading] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadForm] = Form.useForm();
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState('');
+  const fileContentRef = useRef<string>('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -224,6 +244,124 @@ export default function KnowledgeBasePage() {
       }
     } finally {
       setAddPolicyLoading(false);
+    }
+  };
+
+  // ==================== RAG 自定义知识库 ====================
+
+  const fetchUserKnowledge = async () => {
+    setUserKnowledgeLoading(true);
+    try {
+      const res = await ragUserKnowledge();
+      if (res.code === 0) {
+        setUserKnowledgeList(
+          (res.data as { items: RAGKnowledgeItem[]; total: number }).items || [],
+        );
+      }
+    } catch {
+      message.error('加载自定义知识库失败');
+    } finally {
+      setUserKnowledgeLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'custom') {
+      fetchUserKnowledge();
+    }
+  }, [activeTab]);
+
+  const handleFileRead = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result;
+        if (typeof text === 'string') resolve(text);
+        else reject(new Error('文件读取失败'));
+      };
+      reader.onerror = () => reject(new Error('文件读取失败'));
+      // txt 和 md 等纯文本使用 utf-8
+      reader.readAsText(file, 'utf-8');
+    });
+  };
+
+  const beforeUpload = async (file: File) => {
+    // 检查文件大小（限制 5MB）
+    if (file.size > 5 * 1024 * 1024) {
+      message.error('文件大小不能超过 5MB');
+      return Upload.LIST_IGNORE;
+    }
+    // 检查文件类型
+    const ext = file.name.toLowerCase().split('.').pop();
+    if (!['txt', 'md', 'json'].includes(ext || '')) {
+      message.error('仅支持 .txt、.md、.json 文件');
+      return Upload.LIST_IGNORE;
+    }
+    try {
+      const text = await handleFileRead(file);
+      fileContentRef.current = text;
+      setUploadedFileName(file.name);
+      // 自动用文件名（去掉后缀）作为标题
+      const titleFromFile = file.name.replace(/\.[^.]+$/, '');
+      uploadForm.setFieldValue('title', uploadForm.getFieldValue('title') || titleFromFile);
+      message.success(`已读取文件：${file.name}（${(file.size / 1024).toFixed(1)} KB）`);
+    } catch (e) {
+      message.error('文件读取失败');
+    }
+    return false; // 阻止自动上传
+  };
+
+  const handleUploadSubmit = async () => {
+    try {
+      const values = await uploadForm.validateFields();
+      const content = values.content || fileContentRef.current;
+      if (!content || !content.trim()) {
+        message.error('请输入内容或上传文件');
+        return;
+      }
+      setUploadLoading(true);
+      const keywords = values.keywords
+        ? values.keywords.split(/[,,，\s\n]+/).filter((k: string) => k.trim())
+        : [];
+      const res = await ragAddKnowledge({
+        title: values.title,
+        content,
+        category: values.category || '自定义知识',
+        keywords,
+        source: uploadedFileName ? `file:${uploadedFileName}` : 'manual',
+      });
+      if (res.code === 0) {
+        message.success(`添加成功！当前知识库共 ${res.data.totalKnowledge} 条`);
+        setUploadModalOpen(false);
+        uploadForm.resetFields();
+        setUploadedFileName('');
+        fileContentRef.current = '';
+        fetchUserKnowledge();
+      } else {
+        message.error(res.message || '添加失败');
+      }
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'errorFields' in err) {
+        // 表单验证错误
+      } else {
+        message.error('添加失败');
+      }
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  const handleDeleteUserKnowledge = async (id: number) => {
+    try {
+      const res = await ragDeleteKnowledge(id);
+      if (res.code === 0) {
+        message.success('删除成功');
+        fetchUserKnowledge();
+      } else {
+        message.error(res.message || '删除失败');
+      }
+    } catch {
+      message.error('删除失败');
     }
   };
 
@@ -575,6 +713,106 @@ export default function KnowledgeBasePage() {
         </div>
       ),
     },
+    {
+      key: 'custom',
+      label: (
+        <span>
+          <CloudUploadOutlined /> 自定义知识
+        </span>
+      ),
+      children: (
+        <div>
+          <Space style={{ marginBottom: 16 }}>
+            <Text strong>自定义知识库：</Text>
+            <Text type="secondary">支持上传 .txt / .md / .json 文件或直接输入内容</Text>
+            <Button
+              type="primary"
+              icon={<CloudUploadOutlined />}
+              onClick={() => setUploadModalOpen(true)}
+            >
+              上传文件 / 添加条目
+            </Button>
+            <Button onClick={fetchUserKnowledge}>刷新</Button>
+          </Space>
+          <Spin spinning={userKnowledgeLoading}>
+            {userKnowledgeList.length === 0 ? (
+              <Empty
+                description={
+                  <div>
+                    <p>暂无自定义知识</p>
+                    <Text type="secondary">点击「上传文件」按钮添加您的第一条知识</Text>
+                  </div>
+                }
+                style={{ padding: 40 }}
+              >
+                <Button
+                  type="primary"
+                  icon={<CloudUploadOutlined />}
+                  onClick={() => setUploadModalOpen(true)}
+                >
+                  立即添加
+                </Button>
+              </Empty>
+            ) : (
+              <Row gutter={[16, 16]}>
+                {userKnowledgeList.map((item) => (
+                  <Col span={8} key={item.id}>
+                    <Card
+                      size="small"
+                      title={
+                        <Space>
+                          <FileTextOutlined style={{ color: '#1890ff' }} />
+                          <Text strong ellipsis style={{ maxWidth: 200 }}>
+                            {item.title}
+                          </Text>
+                        </Space>
+                      }
+                      extra={
+                        <Space>
+                          <Tag color="cyan">{item.category}</Tag>
+                          <Popconfirm
+                            title="确定删除该知识条目？"
+                            onConfirm={() => handleDeleteUserKnowledge(item.id)}
+                            okText="删除"
+                            cancelText="取消"
+                          >
+                            <Button
+                              type="text"
+                              danger
+                              size="small"
+                              icon={<DeleteOutlined />}
+                            />
+                          </Popconfirm>
+                        </Space>
+                      }
+                      style={{ height: '100%' }}
+                    >
+                      <Paragraph
+                        type="secondary"
+                        ellipsis={{ rows: 3 }}
+                        style={{ fontSize: 13, marginBottom: 8 }}
+                      >
+                        {item.content}
+                      </Paragraph>
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          关键词：
+                        </Text>
+                        {item.keywords?.slice(0, 4).map((k) => (
+                          <Tag key={k} color="blue" style={{ fontSize: 11, marginTop: 4 }}>
+                            {k}
+                          </Tag>
+                        ))}
+                      </div>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            )}
+          </Spin>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -650,6 +888,81 @@ export default function KnowledgeBasePage() {
           </Form.Item>
           <Form.Item name="keywords" label="关键词">
             <Input.TextArea rows={2} placeholder="每行一个关键词（可选）" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 上传文件 / 添加自定义知识 Modal */}
+      <Modal
+        title={
+          <Space>
+            <CloudUploadOutlined />
+            <span>上传文件 / 添加知识条目</span>
+          </Space>
+        }
+        open={uploadModalOpen}
+        onCancel={() => {
+          setUploadModalOpen(false);
+          uploadForm.resetFields();
+          setUploadedFileName('');
+          fileContentRef.current = '';
+        }}
+        onOk={handleUploadSubmit}
+        confirmLoading={uploadLoading}
+        width={680}
+        okText="添加"
+      >
+        <Form form={uploadForm} layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item label="上传文件">
+            <Upload.Dragger
+              name="file"
+              multiple={false}
+              beforeUpload={beforeUpload}
+              showUploadList={false}
+              accept=".txt,.md,.json"
+            >
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined style={{ color: '#1890ff' }} />
+              </p>
+              <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
+              <p className="ant-upload-hint" style={{ fontSize: 12 }}>
+                支持 .txt / .md / .json 格式，单文件不超过 5MB
+                {uploadedFileName && (
+                  <Text type="success" style={{ marginLeft: 8 }}>
+                    ✓ 已选择：{uploadedFileName}
+                  </Text>
+                )}
+              </p>
+            </Upload.Dragger>
+          </Form.Item>
+
+          <Divider plain style={{ margin: '12px 0' }}>或者直接输入</Divider>
+
+          <Form.Item
+            name="title"
+            label="标题"
+            rules={[{ required: true, message: '请输入知识标题' }]}
+          >
+            <Input placeholder="请输入知识标题，如：冬季养生要点" />
+          </Form.Item>
+
+          <Form.Item name="category" label="分类" initialValue="自定义知识">
+            <Input placeholder="如：健康知识 / 政策法规 / 本地服务" />
+          </Form.Item>
+
+          <Form.Item
+            name="content"
+            label="内容"
+            extra="如已上传文件，可留空（使用文件内容）；也可直接输入或修改文件内容"
+          >
+            <Input.TextArea
+              rows={6}
+              placeholder="请输入知识内容..."
+            />
+          </Form.Item>
+
+          <Form.Item name="keywords" label="关键词" extra="用逗号、空格或换行分隔，留空将自动从内容中提取">
+            <Input placeholder="如：冬季, 养生, 保暖" />
           </Form.Item>
         </Form>
       </Modal>

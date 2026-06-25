@@ -95,6 +95,23 @@ export const ragCategories = () =>
 export const ragKnowledge = () =>
   request.get<{ items: RAGKnowledgeItem[]; total: number }>('/rag/knowledge');
 
+// 添加知识条目（从文件或文本）
+export const ragAddKnowledge = (data: {
+  title: string;
+  content: string;
+  category?: string;
+  keywords?: string[] | string;
+  source?: string;
+}) => request.post<{ item: RAGKnowledgeItem; totalKnowledge: number }>('/rag/knowledge/add', data);
+
+// 获取用户添加的知识条目
+export const ragUserKnowledge = () =>
+  request.get<{ items: RAGKnowledgeItem[]; total: number }>('/rag/knowledge/user-items');
+
+// 删除用户添加的知识条目
+export const ragDeleteKnowledge = (id: number) =>
+  request.delete<{ totalKnowledge: number }>(`/rag/knowledge/${id}`);
+
 // ==================== 音乐 API ====================
 
 // 推荐广场舞曲
